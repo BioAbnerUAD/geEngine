@@ -1,4 +1,4 @@
-#include <vld.h>
+//#include <vld.h>
 #include <DirectXMath.h>
 
 #define GTEST_HAS_TR1_TUPLE 0

@@ -10,6 +10,10 @@ using namespace geEngineSDK;
 class RTSTiledMap;
 class RTSMapGridWalker;
 
+namespace RTSGame {
+  class RTSUnitType;
+}
+
 class RTSWorld
 {
  public:
@@ -40,16 +44,28 @@ class RTSWorld
   void
   setCurrentWalker(const int8 index);
 
+  void
+  StartSearch();
+
+  void 
+  StepSearch();
+
  private:
+
+  void 
+  queryLeftClickEvent();
+
+  void
+  queryRightClickEvent();
+
+
   RTSTiledMap* m_pTiledMap;
-  //List<RTSUnitType*> m_lstUnitTypes;
+  List<RTSGame::RTSUnitType*> m_lstUnitTypes;
   //List<RTSUnit*> m_lstUnits;
   
-  //Vector<RTSMapGridWalker*> m_walkersList;
-  Vector<void*> m_walkersList;
-  //RTSMapGridWalker* m_activeWalker;
-  void* m_activeWalker;
-  int8 m_activeWalkerIndex;
+  Vector<RTSMapGridWalker*> m_walkersList;
+  RTSMapGridWalker* m_activeWalker = nullptr;
+  int8 m_activeWalkerIndex = -1;
 
   sf::RenderTarget* m_pTarget;
 };

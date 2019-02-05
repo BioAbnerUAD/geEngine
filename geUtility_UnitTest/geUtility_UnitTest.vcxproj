@@ -108,7 +108,7 @@
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
-      <AdditionalLibraryDirectories>$(SolutionDir)Lib/$(PlatformShortName)/;$(DEVLIBS)GoogleTest/lib/$(PlatformTarget)/;$(DEVLIBS)GoogleTest/lib/$(PlatformTarget)/;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>$(SolutionDir)Lib/$(PlatformShortName)/;$(DEVLIBS)GoogleTest/lib/$(PlatformTarget)/</AdditionalLibraryDirectories>
       <AdditionalDependencies>geUtilityd.lib;gtestd.lib;gtest_maind.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <GenerateDebugInformation>DebugFull</GenerateDebugInformation>
     </Link>
@@ -188,7 +188,7 @@
       <SubSystem>Console</SubSystem>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
-      <AdditionalLibraryDirectories>$(SolutionDir)Lib/$(PlatformShortName)/;$(DEVLIBS)GoogleTest/lib/$(PlatformTarget)/;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>$(SolutionDir)Lib/$(PlatformShortName)/;$(DEVLIBS)GoogleTest/lib/$(PlatformTarget)/</AdditionalLibraryDirectories>
       <AdditionalDependencies>geUtility.lib;gtest.lib;gtest_main.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
     <PostBuildEvent>

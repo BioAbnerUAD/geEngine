@@ -153,7 +153,7 @@ RTSApplication::updateFrame() {
   m_fpsCounter += 1.0f;
 
   //Update the interface
-  ImGui::SFML::Update(*m_window, deltaTime);
+  ImGui::SFML::Update(*m_window, sf::seconds(deltaTime));
 
   //Begin the menu 
   mainMenu(this);
@@ -173,7 +173,7 @@ RTSApplication::updateFrame() {
     axisMovement += Vector2(-1.f, 0.f);
 #endif
   }
-  if (GameOptions::s_Resolution.x -1 == mousePosition.x ||
+  if (GameOptions::s_Resolution.x - 1 == mousePosition.x ||
       sf::Keyboard::isKeyPressed(sf::Keyboard::D) ||
       sf::Keyboard::isKeyPressed(sf::Keyboard::Right)) {
 #ifdef MAP_IS_ISOMETRIC
@@ -312,6 +312,29 @@ mainMenu(RTSApplication* pApp) {
       10240.0f);
 
     ImGui::Checkbox("Show grid", &GameOptions::s_MapShowGrid);
+
+    const ANSICHAR* items[] = {
+      "Breath First Search"
+    };
+
+    static const ANSICHAR* item_current = items[0];
+
+    if (ImGui::BeginCombo("Pathfinding Algorithm", item_current))
+    {
+      for (geEngineSDK::SIZE_T n = 0; n < ge_size(items); n++)
+      {
+        bool is_selected = (item_current == items[n]);
+        if (ImGui::Selectable(items[n], is_selected))
+          item_current = items[n];
+        if (is_selected)
+          ImGui::SetItemDefaultFocus();
+      }
+      ImGui::EndCombo();
+    }
+
+    if (ImGui::Button("Start/Restart Search")) {
+      pApp->getWorld()->StartSearch();
+    }
   }
   ImGui::End();
 

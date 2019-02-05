@@ -116,7 +116,7 @@ void
 RTSTiledMap::getScreenToMapCoords(const int32 scrX,
                                   const int32 scrY,
                                   int32 &mapX,
-                                  int32 &mapY) {
+                                  int32 &mapY) const {
 #ifdef MAP_IS_ISOMETRIC
   float fscrX = ((float)(scrX - m_PreCalc_ScreenDeface.x) / GameOptions::TILEHALFSIZE.x) - 1;
   float fscrY = ((float)(scrY - m_PreCalc_ScreenDeface.y) / GameOptions::TILEHALFSIZE.y);
@@ -136,7 +136,7 @@ void
 RTSTiledMap::getMapToScreenCoords(const int32 mapX,
                                   const int32 mapY,
                                   int32 &scrX,
-                                  int32 &scrY) {
+                                  int32 &scrY) const {
   GE_ASSERT(mapX >= 0 && mapX <= m_mapSize.x && mapY >= 0 && mapY <= m_mapSize.y);
 
 #ifdef MAP_IS_ISOMETRIC

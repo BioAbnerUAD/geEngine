@@ -8,12 +8,12 @@
 #include <SFML/Graphics/Sprite.hpp>
 #include <SFML/Graphics/Texture.hpp>
 #include <SFML/Window/Event.hpp>
+#include <SFML/Window/Touch.hpp>
 #include <SFML/Window/Window.hpp>
 
 #include <cmath> // abs
 #include <cstddef> // offsetof, NULL
 #include <cassert>
-#include <SFML/Window/Touch.hpp>
 
 #ifdef ANDROID
 #ifdef USE_JNI
@@ -61,7 +61,6 @@ int openKeyboardIME()
   vm->DetachCurrentThread();
 
   return EXIT_SUCCESS;
-
 }
 
 int closeKeyboardIME()
@@ -101,7 +100,6 @@ int closeKeyboardIME()
   vm->DetachCurrentThread();
 
   return EXIT_SUCCESS;
-
 }
 
 #endif
@@ -114,35 +112,72 @@ int closeKeyboardIME()
 #pragma GCC diagnostic ignored "-Wint-to-pointer-cast"      // warning: cast to pointer from integer of different size
 #endif
 
-static bool s_windowHasFocus = true;
-static bool s_mousePressed[3] = { false, false, false };
-static bool s_touchDown[3] = { false, false, false };
-static bool s_mouseMoved = false;
-static sf::Vector2i s_touchPos;
-static sf::Texture* s_fontTexture = NULL; // owning pointer to internal font atlas which is used if user doesn't set custom sf::Texture.
 namespace
 {
+  // data
+  static bool s_windowHasFocus = false;
+  static bool s_mousePressed[3] = { false, false, false };
+  static bool s_touchDown[3] = { false, false, false };
+  static bool s_mouseMoved = false;
+  static sf::Vector2i s_touchPos;
+  static sf::Texture* s_fontTexture = NULL; // owning pointer to internal font atlas which is used if user doesn't set custom sf::Texture.
 
+  static const unsigned int NULL_JOYSTICK_ID = sf::Joystick::Count;
+  static unsigned int s_joystickId = NULL_JOYSTICK_ID;
+
+  static const unsigned int NULL_JOYSTICK_BUTTON = sf::Joystick::ButtonCount;
+  static unsigned int s_joystickMapping[ImGuiNavInput_COUNT];
+
+  struct StickInfo {
+    sf::Joystick::Axis xAxis;
+    sf::Joystick::Axis yAxis;
+
+    bool xInverted;
+    bool yInverted;
+
+    float threshold;
+  };
+
+  StickInfo s_dPadInfo;
+  StickInfo s_lStickInfo;
+
+  // various helper functions
   ImVec2 getTopLeftAbsolute(const sf::FloatRect& rect);
   ImVec2 getDownRightAbsolute(const sf::FloatRect& rect);
 
   void RenderDrawLists(ImDrawData* draw_data); // rendering callback function prototype
 
-                                               // Implementation of ImageButton overload
+  // Implementation of ImageButton overload
   bool imageButtonImpl(const sf::Texture& texture, const sf::FloatRect& textureRect, const sf::Vector2f& size, const int framePadding,
     const sf::Color& bgColor, const sf::Color& tintColor);
 
-} // anonymous namespace for helper / "private" functions
+  // Default mapping is XInput gamepad mapping
+  void initDefaultJoystickMapping();
+
+  // Returns first id of connected joystick
+  unsigned int getConnectedJoystickId();
+
+  void updateJoystickActionState(ImGuiIO& io, ImGuiNavInput_ action);
+  void updateJoystickDPadState(ImGuiIO& io);
+  void updateJoystickLStickState(ImGuiIO& io);
+}
 
 namespace ImGui
 {
   namespace SFML
   {
 
-    void Init(sf::RenderTarget& target, bool loadDefaultFont)
+    void Init(sf::RenderWindow& window, bool loadDefaultFont)
+    {
+      Init(window, window, loadDefaultFont);
+    }
+
+    void Init(sf::Window& window, sf::RenderTarget& target, bool loadDefaultFont)
     {
       ImGui::CreateContext();
       ImGuiIO& io = ImGui::GetIO();
+
+      io.BackendFlags |= ImGuiBackendFlags_HasSetMousePos;
 
       // init keyboard mapping
       io.KeyMap[ImGuiKey_Tab] = sf::Keyboard::Tab;
@@ -154,12 +189,14 @@ namespace ImGui
       io.KeyMap[ImGuiKey_PageDown] = sf::Keyboard::PageDown;
       io.KeyMap[ImGuiKey_Home] = sf::Keyboard::Home;
       io.KeyMap[ImGuiKey_End] = sf::Keyboard::End;
+      io.KeyMap[ImGuiKey_Insert] = sf::Keyboard::Insert;
 #ifdef ANDROID
       io.KeyMap[ImGuiKey_Backspace] = sf::Keyboard::Delete;
 #else
       io.KeyMap[ImGuiKey_Delete] = sf::Keyboard::Delete;
       io.KeyMap[ImGuiKey_Backspace] = sf::Keyboard::BackSpace;
 #endif
+      io.KeyMap[ImGuiKey_Space] = sf::Keyboard::Space;
       io.KeyMap[ImGuiKey_Enter] = sf::Keyboard::Return;
       io.KeyMap[ImGuiKey_Escape] = sf::Keyboard::Escape;
       io.KeyMap[ImGuiKey_A] = sf::Keyboard::A;
@@ -169,9 +206,19 @@ namespace ImGui
       io.KeyMap[ImGuiKey_Y] = sf::Keyboard::Y;
       io.KeyMap[ImGuiKey_Z] = sf::Keyboard::Z;
 
+      io.BackendFlags |= ImGuiBackendFlags_HasGamepad;
+      s_joystickId = getConnectedJoystickId();
+
+      for (unsigned int i = 0; i < ImGuiNavInput_COUNT; i++) {
+        s_joystickMapping[i] = NULL_JOYSTICK_BUTTON;
+      }
+
+      initDefaultJoystickMapping();
+
       // init rendering
-      io.DisplaySize = static_cast<sf::Vector2f>(target.getSize());
-      io.RenderDrawListsFn = RenderDrawLists; // set render callback
+      sf::Vector2u tmpVec2 = target.getSize();
+      io.DisplaySize.x = static_cast<float>(tmpVec2.x);
+      io.DisplaySize.y = static_cast<float>(tmpVec2.y);
 
       if (s_fontTexture) { // delete previously created texture
         delete s_fontTexture;
@@ -183,14 +230,16 @@ namespace ImGui
         // No need to call AddDefaultFont
         UpdateFontTexture();
       }
+
+      s_windowHasFocus = window.hasFocus();
     }
 
     void ProcessEvent(const sf::Event& event)
     {
-      ImGuiIO& io = ImGui::GetIO();
       if (s_windowHasFocus) {
-        switch (event.type)
-        {
+        ImGuiIO& io = ImGui::GetIO();
+
+        switch (event.type) {
         case sf::Event::MouseMoved:
           s_mouseMoved = true;
           break;
@@ -230,13 +279,22 @@ namespace ImGui
             io.AddInputCharacter(static_cast<ImWchar>(event.text.unicode));
           }
           break;
+        case sf::Event::JoystickConnected:
+          if (s_joystickId == NULL_JOYSTICK_ID) {
+            s_joystickId = event.joystickConnect.joystickId;
+          }
+          break;
+        case sf::Event::JoystickDisconnected:
+          if (s_joystickId == event.joystickConnect.joystickId) { // used gamepad was disconnected
+            s_joystickId = getConnectedJoystickId();
+          }
+          break;
         default:
           break;
         }
       }
 
-      switch (event.type)
-      {
+      switch (event.type) {
       case sf::Event::LostFocus:
         s_windowHasFocus = false;
         break;
@@ -248,16 +306,14 @@ namespace ImGui
       }
     }
 
-    void Update(sf::RenderWindow& window, float dt)
+    void Update(sf::RenderWindow& window, sf::Time dt)
     {
       Update(window, window, dt);
     }
 
-    void Update(sf::Window& window, sf::RenderTarget& target, float dt)
+    void Update(sf::Window& window, sf::RenderTarget& target, sf::Time dt)
     {
-
-      if (!s_mouseMoved)
-      {
+      if (!s_mouseMoved) {
         if (sf::Touch::isDown(0))
           s_touchPos = sf::Touch::getPosition(0, window);
 
@@ -266,17 +322,29 @@ namespace ImGui
       else {
         Update(sf::Mouse::getPosition(window), static_cast<sf::Vector2f>(target.getSize()), dt);
       }
-      window.setMouseCursorVisible(!ImGui::GetIO().MouseDrawCursor); // don't draw mouse cursor if ImGui draws it
+
+      if (ImGui::GetIO().MouseDrawCursor) {
+        // Hide OS mouse cursor if imgui is drawing it
+        window.setMouseCursorVisible(false);
+      }
     }
 
-    void Update(const sf::Vector2i& mousePos, const sf::Vector2f& displaySize, float dt)
+    void Update(const sf::Vector2i& mousePos, const sf::Vector2f& displaySize, sf::Time dt)
     {
       ImGuiIO& io = ImGui::GetIO();
-      io.DisplaySize = displaySize;
-      io.DeltaTime = dt;
+      io.DisplaySize.x = displaySize.x;
+      io.DisplaySize.y = displaySize.y;
+      io.DeltaTime = dt.asSeconds();
 
       if (s_windowHasFocus) {
-        io.MousePos = mousePos;
+        if (io.WantSetMousePos) {
+          sf::Vector2i mousePos(static_cast<int>(io.MousePos.x), static_cast<int>(io.MousePos.y));
+          sf::Mouse::setPosition(mousePos);
+        }
+        else {
+          io.MousePos.x = static_cast<float>(mousePos.x);
+          io.MousePos.y = static_cast<float>(mousePos.y);
+        }
         for (unsigned int i = 0; i < 3; i++) {
           io.MouseDown[i] = s_touchDown[i] || sf::Touch::isDown(i) || s_mousePressed[i] || sf::Mouse::isButtonPressed((sf::Mouse::Button)i);
           s_mousePressed[i] = false;
@@ -286,13 +354,12 @@ namespace ImGui
 
 #ifdef ANDROID
 #ifdef USE_JNI
-      if (io.WantTextInput && !s_wantTextInput)
-      {
+      if (io.WantTextInput && !s_wantTextInput) {
         openKeyboardIME();
         s_wantTextInput = true;
       }
-      if (!io.WantTextInput && s_wantTextInput)
-      {
+
+      if (!io.WantTextInput && s_wantTextInput) {
         closeKeyboardIME();
         s_wantTextInput = false;
       }
@@ -300,6 +367,25 @@ namespace ImGui
 #endif
 
       assert(io.Fonts->Fonts.Size > 0); // You forgot to create and set up font atlas (see createFontTexture)
+
+      // gamepad navigation
+      if ((io.ConfigFlags & ImGuiConfigFlags_NavEnableGamepad) &&
+        s_joystickId != NULL_JOYSTICK_ID) {
+        updateJoystickActionState(io, ImGuiNavInput_Activate);
+        updateJoystickActionState(io, ImGuiNavInput_Cancel);
+        updateJoystickActionState(io, ImGuiNavInput_Input);
+        updateJoystickActionState(io, ImGuiNavInput_Menu);
+
+        updateJoystickActionState(io, ImGuiNavInput_FocusPrev);
+        updateJoystickActionState(io, ImGuiNavInput_FocusNext);
+
+        updateJoystickActionState(io, ImGuiNavInput_TweakSlow);
+        updateJoystickActionState(io, ImGuiNavInput_TweakFast);
+
+        updateJoystickDPadState(io);
+        updateJoystickLStickState(io);
+      }
+
       ImGui::NewFrame();
     }
 
@@ -307,6 +393,7 @@ namespace ImGui
     {
       target.resetGLStates();
       ImGui::Render();
+      RenderDrawLists(ImGui::GetDrawData());
     }
 
     void Shutdown()
@@ -318,26 +405,22 @@ namespace ImGui
         s_fontTexture = NULL;
       }
 
-      ImGui::DestroyContext(); // need to specify namespace here, otherwise ImGui::SFML::Shutdown would be called
+      ImGui::DestroyContext();
     }
 
     void UpdateFontTexture()
     {
-      sf::Texture& texture = *s_fontTexture;
-
       ImGuiIO& io = ImGui::GetIO();
       unsigned char* pixels;
       int width, height;
 
       io.Fonts->GetTexDataAsRGBA32(&pixels, &width, &height);
 
+      sf::Texture& texture = *s_fontTexture;
       texture.create(width, height);
       texture.update(pixels);
 
-      io.Fonts->TexID = (void*)((size_t)texture.getNativeHandle());
-
-      io.Fonts->ClearInputData();
-      io.Fonts->ClearTexData();
+      io.Fonts->TexID = (void*)texture.getNativeHandle();
     }
 
     sf::Texture& GetFontTexture()
@@ -345,10 +428,60 @@ namespace ImGui
       return *s_fontTexture;
     }
 
+    void SetActiveJoystickId(unsigned int joystickId)
+    {
+      assert(joystickId < sf::Joystick::Count);
+      s_joystickId = joystickId;
+    }
+
+    void SetJoytickDPadThreshold(float threshold)
+    {
+      assert(threshold >= 0.f && threshold <= 100.f);
+      s_dPadInfo.threshold = threshold;
+    }
+
+    void SetJoytickLStickThreshold(float threshold)
+    {
+      assert(threshold >= 0.f && threshold <= 100.f);
+      s_lStickInfo.threshold = threshold;
+    }
+
+    void SetJoystickMapping(int action, unsigned int joystickButton)
+    {
+      assert(action < ImGuiNavInput_COUNT);
+      assert(joystickButton < sf::Joystick::ButtonCount);
+      s_joystickMapping[action] = joystickButton;
+    }
+
+
+    void SetDPadXAxis(sf::Joystick::Axis dPadXAxis, bool inverted)
+    {
+      s_dPadInfo.xAxis = dPadXAxis;
+      s_dPadInfo.xInverted = inverted;
+    }
+
+    void SetDPadYAxis(sf::Joystick::Axis dPadYAxis, bool inverted)
+    {
+      s_dPadInfo.yAxis = dPadYAxis;
+      s_dPadInfo.yInverted = inverted;
+    }
+
+    void SetLStickXAxis(sf::Joystick::Axis lStickXAxis, bool inverted)
+    {
+      s_lStickInfo.xAxis = lStickXAxis;
+      s_lStickInfo.xInverted = inverted;
+    }
+
+    void SetLStickYAxis(sf::Joystick::Axis lStickYAxis, bool inverted)
+    {
+      s_lStickInfo.yAxis = lStickYAxis;
+      s_lStickInfo.yInverted = inverted;
+    }
+
   } // end of namespace SFML
 
 
-    /////////////// Image Overloads
+  /////////////// Image Overloads
 
   void Image(const sf::Texture& texture,
     const sf::Color& tintColor, const sf::Color& borderColor)
@@ -356,10 +489,32 @@ namespace ImGui
     Image(texture, static_cast<sf::Vector2f>(texture.getSize()), tintColor, borderColor);
   }
 
+  inline ImVec4 sfColorToImVec4(const sf::Color& color)
+  {
+    //This function was made my Abner and is probably wrong
+    //TODO: make it less wrong
+    ImVec4 newColor(
+      static_cast<float>(color.r), 
+      static_cast<float>(color.g), 
+      static_cast<float>(color.b), 
+      static_cast<float>(color.a));
+    return newColor;
+  }
+
   void Image(const sf::Texture& texture, const sf::Vector2f& size,
     const sf::Color& tintColor, const sf::Color& borderColor)
   {
-    ImGui::Image((void*)((size_t)texture.getNativeHandle()), size, ImVec2(0, 0), ImVec2(1, 1), tintColor, borderColor);
+    //Abner was here
+    //TODO: find out if there's a proper way of passing references directly here
+    ImVec2 newSize(size.x, size.y);
+    //ImVec4 newTintColor(tintColor.r, tintColor.g, tintColor.b, tintColor.a);
+    //ImVec4 newBorderColor(borderColor.r, borderColor.g, borderColor.b, borderColor.a);
+    ImGui::Image((void*)texture.getNativeHandle(),
+      newSize,
+      ImVec2(0, 0),
+      ImVec2(1, 1),
+      sfColorToImVec4(tintColor),
+      sfColorToImVec4(borderColor));
   }
 
   void Image(const sf::Texture& texture, const sf::FloatRect& textureRect,
@@ -375,7 +530,12 @@ namespace ImGui
     ImVec2 uv0(textureRect.left / textureSize.x, textureRect.top / textureSize.y);
     ImVec2 uv1((textureRect.left + textureRect.width) / textureSize.x,
       (textureRect.top + textureRect.height) / textureSize.y);
-    ImGui::Image((void*)((size_t)texture.getNativeHandle()), size, uv0, uv1, tintColor, borderColor);
+    //Abner was here too
+    //TODO: same thing as last comment
+    ImVec4 newBorderColor(borderColor.r, borderColor.g, borderColor.b, borderColor.a);
+    ImVec4 newTintColor(tintColor.r, tintColor.g, tintColor.b, tintColor.a);
+    ImVec2 newSize(size.x, size.y);
+    ImGui::Image((void*)texture.getNativeHandle(), newSize, uv0, uv1, newTintColor, newBorderColor);
   }
 
   void Image(const sf::Sprite& sprite,
@@ -392,7 +552,7 @@ namespace ImGui
     // sprite without texture cannot be drawn
     if (!texturePtr) { return; }
 
-    Image(*texturePtr, size, tintColor, borderColor);
+    Image(*texturePtr, size, static_cast<sf::FloatRect>(sprite.getTextureRect()), tintColor, borderColor);
   }
 
   /////////////// Image Button Overloads
@@ -431,8 +591,12 @@ namespace ImGui
     float thickness)
   {
     ImDrawList* draw_list = ImGui::GetWindowDrawList();
-    sf::Vector2f pos = ImGui::GetCursorScreenPos();
-    draw_list->AddLine(a + pos, b + pos, ColorConvertFloat4ToU32(color), thickness);
+    //Abner was here
+    //TODO: same as last two
+    ImVec2 pos = ImGui::GetCursorScreenPos();
+    ImVec2 newA(a.x + pos.x, a.y + pos.y);
+    ImVec2 newB(b.x + pos.x, b.y + pos.y);
+    draw_list->AddLine(newA, newB, ColorConvertFloat4ToU32(sfColorToImVec4(color)), thickness);
   }
 
   void DrawRect(const sf::FloatRect& rect, const sf::Color& color,
@@ -442,7 +606,7 @@ namespace ImGui
     draw_list->AddRect(
       getTopLeftAbsolute(rect),
       getDownRightAbsolute(rect),
-      ColorConvertFloat4ToU32(color), rounding, rounding_corners, thickness);
+      ColorConvertFloat4ToU32(sfColorToImVec4(color)), rounding, rounding_corners, thickness);
   }
 
   void DrawRectFilled(const sf::FloatRect& rect, const sf::Color& color,
@@ -452,7 +616,7 @@ namespace ImGui
     draw_list->AddRectFilled(
       getTopLeftAbsolute(rect),
       getDownRightAbsolute(rect),
-      ColorConvertFloat4ToU32(color), rounding, rounding_corners);
+      ColorConvertFloat4ToU32(sfColorToImVec4(color)), rounding, rounding_corners);
   }
 
 } // end of namespace ImGui
@@ -474,7 +638,7 @@ namespace
   // Rendering callback
   void RenderDrawLists(ImDrawData* draw_data)
   {
-
+    ImGui::GetDrawData();
     if (draw_data->CmdListsCount == 0) {
       return;
     }
@@ -482,13 +646,11 @@ namespace
     ImGuiIO& io = ImGui::GetIO();
     assert(io.Fonts->TexID != NULL); // You forgot to create and set font texture
 
-                                     // scale stuff (needed for proper handling of window resize)
+    // scale stuff (needed for proper handling of window resize)
     int fb_width = static_cast<int>(io.DisplaySize.x * io.DisplayFramebufferScale.x);
     int fb_height = static_cast<int>(io.DisplaySize.y * io.DisplayFramebufferScale.y);
     if (fb_width == 0 || fb_height == 0) { return; }
     draw_data->ScaleClipRects(io.DisplayFramebufferScale);
-
-
 
 #ifdef GL_VERSION_ES_CL_1_1
     GLint last_program, last_texture, last_array_buffer, last_element_array_buffer;
@@ -570,7 +732,94 @@ namespace
     ImVec2 uv1((textureRect.left + textureRect.width) / textureSize.x,
       (textureRect.top + textureRect.height) / textureSize.y);
 
-    return ImGui::ImageButton((void*)((size_t)texture.getNativeHandle()), size, uv0, uv1, framePadding, bgColor, tintColor);
+    //Abner was here
+    //TODO: ...and again
+    ImVec2 newSize(size.x, size.y);
+    ImVec4 newBgColor(bgColor.r, bgColor.g, bgColor.b, bgColor.a);
+    ImVec4 newTintColor(tintColor.r, tintColor.g, tintColor.b, tintColor.a);
+
+    return ImGui::ImageButton((void*)texture.getNativeHandle(), newSize, uv0, uv1, framePadding, newBgColor, newTintColor);
+  }
+
+  unsigned int getConnectedJoystickId()
+  {
+    for (unsigned int i = 0; i < (unsigned int)sf::Joystick::Count; ++i) {
+      if (sf::Joystick::isConnected(i)) return i;
+    }
+
+    return NULL_JOYSTICK_ID;
+  }
+
+  void initDefaultJoystickMapping()
+  {
+    ImGui::SFML::SetJoystickMapping(ImGuiNavInput_Activate, 0);
+    ImGui::SFML::SetJoystickMapping(ImGuiNavInput_Cancel, 1);
+    ImGui::SFML::SetJoystickMapping(ImGuiNavInput_Input, 3);
+    ImGui::SFML::SetJoystickMapping(ImGuiNavInput_Menu, 2);
+    ImGui::SFML::SetJoystickMapping(ImGuiNavInput_FocusPrev, 4);
+    ImGui::SFML::SetJoystickMapping(ImGuiNavInput_FocusNext, 5);
+    ImGui::SFML::SetJoystickMapping(ImGuiNavInput_TweakSlow, 4);
+    ImGui::SFML::SetJoystickMapping(ImGuiNavInput_TweakFast, 5);
+
+    ImGui::SFML::SetDPadXAxis(sf::Joystick::PovX);
+    // D-pad Y axis is inverted on Windows
+#ifdef _WIN32
+    ImGui::SFML::SetDPadYAxis(sf::Joystick::PovY, true);
+#else
+    ImGui::SFML::SetDPadYAxis(sf::Joystick::PovY);
+#endif
+
+    ImGui::SFML::SetLStickXAxis(sf::Joystick::X);
+    ImGui::SFML::SetLStickYAxis(sf::Joystick::Y);
+
+    ImGui::SFML::SetJoytickDPadThreshold(5.f);
+    ImGui::SFML::SetJoytickLStickThreshold(5.f);
+  }
+
+  void updateJoystickActionState(ImGuiIO& io, ImGuiNavInput_ action)
+  {
+    bool isPressed = sf::Joystick::isButtonPressed(s_joystickId, s_joystickMapping[action]);
+    io.NavInputs[action] = isPressed ? 1.0f : 0.0f;
+  }
+
+  void updateJoystickDPadState(ImGuiIO& io)
+  {
+    float dpadXPos = sf::Joystick::getAxisPosition(s_joystickId, s_dPadInfo.xAxis);
+    if (s_dPadInfo.xInverted) dpadXPos = -dpadXPos;
+
+    float dpadYPos = sf::Joystick::getAxisPosition(s_joystickId, s_dPadInfo.yAxis);
+    if (s_dPadInfo.yInverted) dpadYPos = -dpadYPos;
+
+    io.NavInputs[ImGuiNavInput_DpadLeft] = dpadXPos < -s_dPadInfo.threshold ? 1.0f : 0.0f;
+    io.NavInputs[ImGuiNavInput_DpadRight] = dpadXPos > s_dPadInfo.threshold ? 1.0f : 0.0f;
+
+    io.NavInputs[ImGuiNavInput_DpadUp] = dpadYPos < -s_dPadInfo.threshold ? 1.0f : 0.0f;
+    io.NavInputs[ImGuiNavInput_DpadDown] = dpadYPos > s_dPadInfo.threshold ? 1.0f : 0.0f;
+  }
+
+  void updateJoystickLStickState(ImGuiIO& io)
+  {
+    float lStickXPos = sf::Joystick::getAxisPosition(s_joystickId, s_lStickInfo.xAxis);
+    if (s_lStickInfo.xInverted) lStickXPos = -lStickXPos;
+
+    float lStickYPos = sf::Joystick::getAxisPosition(s_joystickId, s_lStickInfo.yAxis);
+    if (s_lStickInfo.yInverted) lStickYPos = -lStickYPos;
+
+    if (lStickXPos < -s_lStickInfo.threshold) {
+      io.NavInputs[ImGuiNavInput_LStickLeft] = std::abs(lStickXPos / 100.f);
+    }
+
+    if (lStickXPos > s_lStickInfo.threshold) {
+      io.NavInputs[ImGuiNavInput_LStickRight] = lStickXPos / 100.f;
+    }
+
+    if (lStickYPos < -s_lStickInfo.threshold) {
+      io.NavInputs[ImGuiNavInput_LStickUp] = std::abs(lStickYPos / 100.f);
+    }
+
+    if (lStickYPos > s_lStickInfo.threshold) {
+      io.NavInputs[ImGuiNavInput_LStickDown] = lStickYPos / 100.f;
+    }
   }
 
 } // end of anonymous namespace

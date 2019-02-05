@@ -153,13 +153,13 @@ class RTSTiledMap
   getScreenToMapCoords(const int32 scrX,
                        const int32 scrY,
                        int32 &mapX,
-                       int32 &mapY);
+                       int32 &mapY) const;
 
   void
   getMapToScreenCoords(const int32 mapX,
                        const int32 mapY,
                        int32 &scrX,
-                       int32 &scrY);
+                       int32 &scrY) const;
 
  private:
   Vector2I m_mapSize;
