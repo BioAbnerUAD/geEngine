@@ -4,6 +4,13 @@
 #include "RTSBreadthFirstSearchMapGridWalker.h"
 #include "RTSTiledMap.h"
 
+const Vector2I RTSBreadthFirstSearchMapGridWalker::s_neighborOffsets[] = {
+  Vector2I(0, 1),
+  Vector2I(0,-1),
+  Vector2I(1, 0),
+  Vector2I(-1, 0),
+};
+
 RTSBreadthFirstSearchMapGridWalker::
 RTSBreadthFirstSearchMapGridWalker(RTSTiledMap * m_pTiledMap) :
   RTSMapGridWalker(m_pTiledMap), m_pTargetShape(nullptr) {
@@ -90,16 +97,11 @@ RTSBreadthFirstSearchMapGridWalker::StartSeach(bool stepMode) {
 
 void
 RTSBreadthFirstSearchMapGridWalker::StepSearch() {
-  static const Vector2I neighbourOffset[] =
-  {
-    Vector2I(0, 1),
-    Vector2I(0,-1),
-    Vector2I(1, 0),
-    Vector2I(-1, 0),
-  };
+  GE_ASSERT(searching || !foundPath);
 
-  //don't assert just in case something goes wrong (we don't want it to actually send an error)
-  if (!searching || foundPath || m_queue.empty()) {
+  //TODO: this condition actually happens when no path is possible so mark it as such
+  if (m_queue.empty()) {
+    foundPath = true;
     return;
   }
 
@@ -110,9 +112,8 @@ RTSBreadthFirstSearchMapGridWalker::StepSearch() {
   m_queue.pop_front();
 
   //processing all the neighbors of v
-  for each (Vector2I offset in neighbourOffset)
-  {
-    Vector2I w = v + offset;
+  for (SIZE_T i = 0; i < ge_size(s_neighborOffsets); ++i) {
+    Vector2I w = v + s_neighborOffsets[i];
     //if neighbor is target then a path has been found
     if (GetTargetPos() == w) {
       foundPath = true;
@@ -127,7 +128,8 @@ RTSBreadthFirstSearchMapGridWalker::StepSearch() {
         
         m_queue.push_back(w); //enqueue w
 
-        m_path[(w.y*mapSize.x) + w.x] = new RTSPathNode(w, offset); //mark w as visited.
+        m_path[(w.y*mapSize.x) + w.x] 
+          = new RTSPathNode(w, s_neighborOffsets[i]); //mark w as visited.
                                                          
       }
     }

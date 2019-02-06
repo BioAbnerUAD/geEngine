@@ -37,6 +37,8 @@ class GameOptions : public Module<GameOptions>
   static const Vector2I TILEHALFSIZE;
   static const Vector2I BITSFHT_TILEHALFSIZE;
   static const Vector2I BITSHFT_TILESIZE;
+
+  static bool s_MoveWalkerOrTarget;
 };
 
 GameOptions&

@@ -18,7 +18,7 @@ RTSMapGridWalker::RTSPathNode::RTSPathNode(const Vector2I & position,
 
   m_pShape = new sf::RectangleShape(sf::Vector2f(5.f, 5.f));
   m_pShape->setFillColor(sf::Color::Red);
-  m_pShape->setOrigin(5, 5);
+  m_pShape->setOrigin(2.5f, 2.5f);
 
   if (Vector2I::ZERO != direction) {
     m_pDirShape = new sf::RectangleShape(sf::Vector2f(10.f, 1.f));

@@ -40,6 +40,7 @@ RTSWorld::init(sf::RenderTarget* pTarget) {
   //Set the first walker as the active walker
   setCurrentWalker(m_walkersList.size() > 0 ? 0 : -1);
 
+  //TODO:define constants for the initial positions of these two
   m_activeWalker->SetPosition(Vector2I(0, 0));
   m_activeWalker->SetTargetPos(Vector2I(0, 1));
 
@@ -137,10 +138,24 @@ RTSWorld::queryRightClickEvent() {
                                       static_cast<int32>(mousePos.y),
                                       mapPos.x, mapPos.y);
 
-    //Make sure it's not the same tile where the 'Active Walker' is already at
-    if (m_activeWalker->GetPosition() != mapPos) {
-      //move the 'Active Walker'
-      m_activeWalker->SetTargetPos(mapPos);
+    //Make sure that there is no obstacle in this place
+    if (TERRAIN_TYPE::kObstacle != m_pTiledMap->getType(mapPos.x, mapPos.y)) {
+
+      if (GameOptions::s_MoveWalkerOrTarget) {
+        // Make sure it's not the same tile where the Target is already at
+        if (m_activeWalker->GetTargetPos() != mapPos) {
+          //move the 'Active Walker'
+          m_activeWalker->SetPosition(mapPos);
+        }
+      }
+      else {
+        // Make sure it's not the same tile where the 'Active Walker' is already at
+        if (m_activeWalker->GetTargetPos() != mapPos) {
+          //move the Target
+          m_activeWalker->SetTargetPos(mapPos);
+        }
+      }
+
     }
   }
 }

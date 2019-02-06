@@ -26,5 +26,7 @@ public:
   StepSearch();
 
 private:
+  static const Vector2I s_neighborOffsets[];
+
   sf::Shape* m_pTargetShape;
 };

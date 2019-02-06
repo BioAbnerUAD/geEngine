@@ -19,6 +19,12 @@ const Vector2I
 GameOptions::BITSFHT_TILEHALFSIZE = Vector2I(GameOptions::BITSHFT_TILESIZE.x - 1,
                                              GameOptions::BITSHFT_TILESIZE.y - 1);
 
+/**
+ * true means move walker
+ * false means move target
+ */
+bool GameOptions::s_MoveWalkerOrTarget = true;
+
 GameOptions&
 g_gameOptions() {
   return GameOptions::instance();

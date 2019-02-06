@@ -319,6 +319,10 @@ mainMenu(RTSApplication* pApp) {
 
     static const ANSICHAR* item_current = items[0];
 
+    ImGui::Separator();
+
+    ImGui::Text("Pathfinding");
+
     if (ImGui::BeginCombo("Pathfinding Algorithm", item_current))
     {
       for (geEngineSDK::SIZE_T n = 0; n < ge_size(items); n++)
@@ -331,6 +335,8 @@ mainMenu(RTSApplication* pApp) {
       }
       ImGui::EndCombo();
     }
+
+    ImGui::Checkbox("Move Walker/Target", &GameOptions::s_MoveWalkerOrTarget);
 
     if (ImGui::Button("Start/Restart Search")) {
       pApp->getWorld()->StartSearch();
