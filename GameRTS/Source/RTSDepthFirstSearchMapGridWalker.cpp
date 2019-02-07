@@ -1,16 +1,16 @@
 #include <SFML/Graphics/RectangleShape.hpp>
 #include <SFML/Graphics/RenderTarget.hpp>
 
-#include "RTSBreadthFirstSearchMapGridWalker.h"
+#include "RTSDepthFirstSearchMapGridWalker.h"
 #include "RTSTiledMap.h"
 
-RTSBreadthFirstSearchMapGridWalker::
-RTSBreadthFirstSearchMapGridWalker(RTSTiledMap * m_pTiledMap) :
+RTSDepthFirstSearchMapGridWalker::
+RTSDepthFirstSearchMapGridWalker(RTSTiledMap * m_pTiledMap) :
   RTSMapGridWalker(m_pTiledMap), m_pTargetShape(nullptr) {
 
 }
 
-RTSBreadthFirstSearchMapGridWalker::~RTSBreadthFirstSearchMapGridWalker() {
+RTSDepthFirstSearchMapGridWalker::~RTSDepthFirstSearchMapGridWalker() {
   if (nullptr != m_pTargetShape)
   {
     ge_delete(m_pTargetShape);
@@ -18,7 +18,7 @@ RTSBreadthFirstSearchMapGridWalker::~RTSBreadthFirstSearchMapGridWalker() {
 }
 
 bool 
-RTSBreadthFirstSearchMapGridWalker::init()
+RTSDepthFirstSearchMapGridWalker::init()
 {
   auto shape = new sf::RectangleShape(sf::Vector2f(10.f, 10.f));
   shape->setFillColor(sf::Color::Red);
@@ -37,7 +37,7 @@ RTSBreadthFirstSearchMapGridWalker::init()
 }
 
 void 
-RTSBreadthFirstSearchMapGridWalker::render(sf::RenderTarget * target)
+RTSDepthFirstSearchMapGridWalker::render(sf::RenderTarget * target)
 {
   Vector2I screenPos;
   GetTiledMap()->getMapToScreenCoords(GetPosition().x, GetPosition().y,
@@ -66,15 +66,15 @@ RTSBreadthFirstSearchMapGridWalker::render(sf::RenderTarget * target)
 }
 
 void
-RTSBreadthFirstSearchMapGridWalker::StartSeach(bool stepMode) {
+RTSDepthFirstSearchMapGridWalker::StartSeach(bool stepMode) {
   Vector2I s = GetPosition();
   Vector2I mapSize = GetTiledMap()->getMapSize();
-
+  
   searching = true;
   foundPath = false;
 
   m_openList.clear();
-  m_openList.push_back(s); // enqueue source
+  m_openList.push_back(s); // push source into stack
 
   ResetPath();
   m_path[(s.y*mapSize.x) + s.x] = new RTSPathNode(GetPosition(),
@@ -88,7 +88,7 @@ RTSBreadthFirstSearchMapGridWalker::StartSeach(bool stepMode) {
 }
 
 void
-RTSBreadthFirstSearchMapGridWalker::StepSearch() {
+RTSDepthFirstSearchMapGridWalker::StepSearch() {
   GE_ASSERT(searching || !foundPath);
 
   //TODO: this condition actually happens when no path is possible so mark it as such
@@ -99,9 +99,9 @@ RTSBreadthFirstSearchMapGridWalker::StepSearch() {
 
   Vector2I mapSize = GetTiledMap()->getMapSize();
   
-  //Removing that vertex from queue, whose neighbors will be visited now
-  Vector2I v = m_openList.front();
-  m_openList.pop_front();
+  //Removing that vertex from stack, whose neighbors will be visited now
+  Vector2I v = m_openList.back();
+  m_openList.pop_back();
 
   //processing all the neighbors of v
   for (SIZE_T i = 0; i < ge_size(s_neighborOffsets); ++i) {
@@ -118,7 +118,7 @@ RTSBreadthFirstSearchMapGridWalker::StepSearch() {
       if (TERRAIN_TYPE::kObstacle != GetTiledMap()->getType(w.x, w.y) &&
         nullptr == m_path[(w.y*mapSize.x) + w.x]) {
         
-        m_openList.push_back(w); //enqueue w
+        m_openList.push_back(w); //push w into stack
 
         m_path[(w.y*mapSize.x) + w.x] 
           = new RTSPathNode(w, s_neighborOffsets[i]); //mark w as visited.

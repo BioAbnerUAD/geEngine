@@ -39,6 +39,8 @@ class GameOptions : public Module<GameOptions>
   static const Vector2I BITSHFT_TILESIZE;
 
   static bool s_MoveWalkerOrTarget;
+
+  static int8 s_CurrentWalkerIndex;
 };
 
 GameOptions&

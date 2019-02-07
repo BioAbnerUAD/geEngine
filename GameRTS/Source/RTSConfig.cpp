@@ -25,6 +25,8 @@ GameOptions::BITSFHT_TILEHALFSIZE = Vector2I(GameOptions::BITSHFT_TILESIZE.x - 1
  */
 bool GameOptions::s_MoveWalkerOrTarget = true;
 
+int8 GameOptions::s_CurrentWalkerIndex = 0;
+
 GameOptions&
 g_gameOptions() {
   return GameOptions::instance();

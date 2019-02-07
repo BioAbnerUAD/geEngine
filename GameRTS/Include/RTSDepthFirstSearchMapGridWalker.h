@@ -6,12 +6,12 @@
 
 using namespace geEngineSDK;
 
-class RTSBreadthFirstSearchMapGridWalker :
+class RTSDepthFirstSearchMapGridWalker :
   public RTSMapGridWalker
 {
 public:
-  RTSBreadthFirstSearchMapGridWalker(RTSTiledMap* m_pTiledMap);
-  ~RTSBreadthFirstSearchMapGridWalker();
+  RTSDepthFirstSearchMapGridWalker(RTSTiledMap* m_pTiledMap);
+  ~RTSDepthFirstSearchMapGridWalker();
 
   bool
   init();

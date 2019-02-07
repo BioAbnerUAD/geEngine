@@ -12,6 +12,9 @@
     <Filter Include="Source Files\Externals">
       <UniqueIdentifier>{05cba2b1-52b3-405c-9866-b29fae8fd3fd}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Source Files\Pathfinding">
+      <UniqueIdentifier>{e13ebf2d-3ea2-4a89-b0a8-4745ec221a2e}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Source\Externals\imgui.cpp">
@@ -51,10 +54,13 @@
       <Filter>Source Files\Externals</Filter>
     </ClCompile>
     <ClCompile Include="Source\RTSBreadthFirstSearchMapGridWalker.cpp">
-      <Filter>Source Files</Filter>
+      <Filter>Source Files\Pathfinding</Filter>
     </ClCompile>
     <ClCompile Include="Source\RTSMapGridWalker.cpp">
-      <Filter>Source Files</Filter>
+      <Filter>Source Files\Pathfinding</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\RTSDepthFirstSearchMapGridWalker.cpp">
+      <Filter>Source Files\Pathfinding</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -77,10 +83,13 @@
       <Filter>Source Files</Filter>
     </ClInclude>
     <ClInclude Include="Include\RTSBreadthFirstSearchMapGridWalker.h">
-      <Filter>Source Files</Filter>
+      <Filter>Source Files\Pathfinding</Filter>
     </ClInclude>
     <ClInclude Include="Include\RTSMapGridWalker.h">
-      <Filter>Source Files</Filter>
+      <Filter>Source Files\Pathfinding</Filter>
+    </ClInclude>
+    <ClInclude Include="Include\RTSDepthFirstSearchMapGridWalker.h">
+      <Filter>Source Files\Pathfinding</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

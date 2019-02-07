@@ -314,7 +314,8 @@ mainMenu(RTSApplication* pApp) {
     ImGui::Checkbox("Show grid", &GameOptions::s_MapShowGrid);
 
     const ANSICHAR* items[] = {
-      "Breath First Search"
+      "Breath First Search",
+      "Depth First Search"
     };
 
     static const ANSICHAR* item_current = items[0];
@@ -325,13 +326,16 @@ mainMenu(RTSApplication* pApp) {
 
     if (ImGui::BeginCombo("Pathfinding Algorithm", item_current))
     {
-      for (geEngineSDK::SIZE_T n = 0; n < ge_size(items); n++)
+      for (int8 n = 0; n < ge_size(items); n++)
       {
         bool is_selected = (item_current == items[n]);
-        if (ImGui::Selectable(items[n], is_selected))
+        if (ImGui::Selectable(items[n], is_selected)) {
           item_current = items[n];
-        if (is_selected)
+        }
+        if (is_selected) {
           ImGui::SetItemDefaultFocus();
+          GameOptions::s_CurrentWalkerIndex = n;
+        }
       }
       ImGui::EndCombo();
     }

@@ -4,6 +4,7 @@
 #include "RTSUnitType.h"
 
 #include "RTSBreadthFirstSearchMapGridWalker.h"
+#include "RTSDepthFirstSearchMapGridWalker.h"
 
 using namespace RTSGame;
 
@@ -30,6 +31,7 @@ RTSWorld::init(sf::RenderTarget* pTarget) {
 
   //Create the path finding classes and push them to the walker list
   m_walkersList.push_back(ge_new<RTSBreadthFirstSearchMapGridWalker>(m_pTiledMap));
+  m_walkersList.push_back(ge_new<RTSDepthFirstSearchMapGridWalker>(m_pTiledMap));
 
   //Init the walker objects
 
@@ -71,6 +73,12 @@ RTSWorld::update(float deltaTime) {
 
   queryLeftClickEvent();
   queryRightClickEvent();
+
+  // If the selected walker index is different than the one registered than update it
+  if (m_activeWalkerIndex != GameOptions::s_CurrentWalkerIndex &&
+    m_walkersList.size() > GameOptions::s_CurrentWalkerIndex) {
+    setCurrentWalker(GameOptions::s_CurrentWalkerIndex);
+  }
 
   if (m_activeWalker)
   {

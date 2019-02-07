@@ -82,17 +82,22 @@ public:
     return foundPath; 
   }
 protected:
+  FORCEINLINE const RTSTiledMap*
+  GetTiledMap() const {
+    return m_pTiledMap;
+  }
+
+  FORCEINLINE void
+  ResetPath();
+  
   sf::Shape* m_pShape;
-  List<Vector2I>m_queue;
+  List<Vector2I>m_openList;
   Vector<RTSPathNode*> m_path;
 
   bool searching = false;
   bool foundPath = false;
-  
-  FORCEINLINE const RTSTiledMap*
-    GetTiledMap() const {
-    return m_pTiledMap;
-  }
+
+  static const Vector2I s_neighborOffsets[4];
 
 private:
 
