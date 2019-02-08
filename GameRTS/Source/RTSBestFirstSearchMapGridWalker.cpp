@@ -117,7 +117,7 @@ RTSBestFirstSearchMapGridWalker::StepSearch() {
     }
 
     //make sure it's a valid neighbor
-    if (w.x >= 0 && w.x <= mapSize.x && w.y >= 0 && w.y <= mapSize.y) {
+    if (w.x >= 0 && w.x < mapSize.x && w.y >= 0 && w.y < mapSize.y) {
       //make sure it's not an obstacle and it isn't marked as visited
       if (TERRAIN_TYPE::kObstacle != GetTiledMap()->getType(w.x, w.y) &&
         nullptr == m_path[(w.y*mapSize.x) + w.x]) {

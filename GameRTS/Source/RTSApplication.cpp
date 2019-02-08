@@ -332,10 +332,10 @@ mainMenu(RTSApplication* pApp) {
         bool is_selected = (item_current == items[n]);
         if (ImGui::Selectable(items[n], is_selected)) {
           item_current = items[n];
+          GameOptions::s_CurrentWalkerIndex = n;
         }
         if (is_selected) {
           ImGui::SetItemDefaultFocus();
-          GameOptions::s_CurrentWalkerIndex = n;
         }
       }
       ImGui::EndCombo();

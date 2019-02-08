@@ -4,7 +4,9 @@
 #include "RTSPathNode.h"
 
 RTSMapGridWalker::RTSMapGridWalker(RTSTiledMap * pTiledMap) :
-  m_pTiledMap(pTiledMap), m_pShape(nullptr) {
+  m_pTiledMap(pTiledMap), m_pShape(nullptr), 
+  m_position(Vector2I::ZERO), m_targetPos(Vector2I::ZERO){
+
   Vector2I mapSize = pTiledMap->getMapSize();
   m_path.resize(mapSize.x * mapSize.y);
 }

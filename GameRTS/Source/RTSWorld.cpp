@@ -44,10 +44,6 @@ RTSWorld::init(sf::RenderTarget* pTarget) {
   //Set the first walker as the active walker
   setCurrentWalker(m_walkersList.size() > 0 ? 0 : -1);
 
-  //TODO:define constants for the initial positions of these two
-  m_activeWalker->SetPosition(Vector2I(0, 0));
-  m_activeWalker->SetTargetPos(Vector2I(0, 1));
-
   RTSGame::RTSUnitType unitTypes;
   unitTypes.loadAnimationData(m_pTarget, 1);
 
