@@ -1,18 +1,19 @@
+#include "RTSDepthFirstSearchMapGridWalker.h"
+
 #include <SFML/Graphics/RectangleShape.hpp>
 #include <SFML/Graphics/RenderTarget.hpp>
 
-#include "RTSDepthFirstSearchMapGridWalker.h"
+#include "RTSPathNode.h"
 #include "RTSTiledMap.h"
 
 RTSDepthFirstSearchMapGridWalker::
-RTSDepthFirstSearchMapGridWalker(RTSTiledMap * m_pTiledMap) :
-  RTSMapGridWalker(m_pTiledMap), m_pTargetShape(nullptr) {
+RTSDepthFirstSearchMapGridWalker(RTSTiledMap * pTiledMap) :
+  RTSMapGridWalker(pTiledMap), m_pTargetShape(nullptr) {
 
 }
 
 RTSDepthFirstSearchMapGridWalker::~RTSDepthFirstSearchMapGridWalker() {
-  if (nullptr != m_pTargetShape)
-  {
+  if (nullptr != m_pTargetShape) {
     ge_delete(m_pTargetShape);
   }
 }
@@ -70,8 +71,8 @@ RTSDepthFirstSearchMapGridWalker::StartSeach(bool stepMode) {
   Vector2I s = GetPosition();
   Vector2I mapSize = GetTiledMap()->getMapSize();
   
-  searching = true;
-  foundPath = false;
+  m_searching = true;
+  m_foundPath = false;
 
   m_openList.clear();
   m_openList.push_back(s); // push source into stack
@@ -81,7 +82,7 @@ RTSDepthFirstSearchMapGridWalker::StartSeach(bool stepMode) {
                                                   Vector2I::ZERO); // mark source as visited.
   
   if (!stepMode) { //when not in stepMode run entire search all at once
-    while (!m_openList.empty() && !foundPath) {
+    while (!m_openList.empty() && !m_foundPath) {
       StepSearch();
     }
   }
@@ -89,11 +90,11 @@ RTSDepthFirstSearchMapGridWalker::StartSeach(bool stepMode) {
 
 void
 RTSDepthFirstSearchMapGridWalker::StepSearch() {
-  GE_ASSERT(searching || !foundPath);
+  GE_ASSERT(m_searching || !m_foundPath);
 
   //TODO: this condition actually happens when no path is possible so mark it as such
   if (m_openList.empty()) {
-    foundPath = true;
+    m_foundPath = true;
     return;
   }
 
@@ -104,11 +105,13 @@ RTSDepthFirstSearchMapGridWalker::StepSearch() {
   m_openList.pop_back();
 
   //processing all the neighbors of v
+  Vector2I w;
+  
   for (SIZE_T i = 0; i < ge_size(s_neighborOffsets); ++i) {
-    Vector2I w = v + s_neighborOffsets[i];
+    w = v + s_neighborOffsets[i];
     //if neighbor is target then a path has been found
     if (GetTargetPos() == w) {
-      foundPath = true;
+      m_foundPath = true;
       break;
     }
 

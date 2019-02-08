@@ -11,27 +11,11 @@ namespace sf{
 }
 
 class RTSTiledMap;
+class RTSPathNode;
 
 class RTSMapGridWalker
 {
 public:
-  class RTSPathNode
-  {
-  public:
-    RTSPathNode(const Vector2I& position,
-                const Vector2I& direction);
-    ~RTSPathNode();
-
-    void 
-    render(sf::RenderTarget * target,
-           const RTSTiledMap& tileMap);
-  private:
-    Vector2I m_position;
-    Vector2I m_direction;
-    sf::Shape* m_pShape;
-    sf::Shape* m_pDirShape;
-  };
-
   RTSMapGridWalker(RTSTiledMap* pTiledMap);
   ~RTSMapGridWalker();
 
@@ -74,28 +58,30 @@ public:
 
   FORCEINLINE bool
   IsSearching() const { 
-    return searching; 
+    return m_searching; 
   }
 
   FORCEINLINE bool 
   HasFoundPath() const {
-    return foundPath; 
+    return m_foundPath; 
   }
+
+  void
+  ResetPath();
+
 protected:
   FORCEINLINE const RTSTiledMap*
   GetTiledMap() const {
     return m_pTiledMap;
   }
 
-  FORCEINLINE void
-  ResetPath();
   
   sf::Shape* m_pShape;
-  List<Vector2I>m_openList;
+  List<Vector2I> m_openList;
   Vector<RTSPathNode*> m_path;
 
-  bool searching = false;
-  bool foundPath = false;
+  bool m_searching = false;
+  bool m_foundPath = false;
 
   static const Vector2I s_neighborOffsets[4];
 

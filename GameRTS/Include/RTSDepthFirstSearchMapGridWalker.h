@@ -10,14 +10,14 @@ class RTSDepthFirstSearchMapGridWalker :
   public RTSMapGridWalker
 {
 public:
-  RTSDepthFirstSearchMapGridWalker(RTSTiledMap* m_pTiledMap);
+  RTSDepthFirstSearchMapGridWalker(RTSTiledMap* pTiledMap);
   ~RTSDepthFirstSearchMapGridWalker();
 
   bool
   init();
 
   void
-  render(sf::RenderTarget* target);
+  render(sf::RenderTarget* ptarget);
 
   void 
   StartSeach(bool stepMode);

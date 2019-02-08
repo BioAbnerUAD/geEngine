@@ -62,6 +62,12 @@
     <ClCompile Include="Source\RTSDepthFirstSearchMapGridWalker.cpp">
       <Filter>Source Files\Pathfinding</Filter>
     </ClCompile>
+    <ClCompile Include="Source\RTSBestFirstSearchMapGridWalker.cpp">
+      <Filter>Source Files\Pathfinding</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\RTSPathNode.cpp">
+      <Filter>Source Files\Pathfinding</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Include\RTSUnitType.h">
@@ -89,6 +95,12 @@
       <Filter>Source Files\Pathfinding</Filter>
     </ClInclude>
     <ClInclude Include="Include\RTSDepthFirstSearchMapGridWalker.h">
+      <Filter>Source Files\Pathfinding</Filter>
+    </ClInclude>
+    <ClInclude Include="Include\RTSBestFirstSearchMapGridWalker.h">
+      <Filter>Source Files\Pathfinding</Filter>
+    </ClInclude>
+    <ClInclude Include="Include\RTSPathNode.h">
       <Filter>Source Files\Pathfinding</Filter>
     </ClInclude>
   </ItemGroup>

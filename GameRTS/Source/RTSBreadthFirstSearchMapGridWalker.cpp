@@ -1,7 +1,9 @@
+#include "RTSBreadthFirstSearchMapGridWalker.h"
+
 #include <SFML/Graphics/RectangleShape.hpp>
 #include <SFML/Graphics/RenderTarget.hpp>
 
-#include "RTSBreadthFirstSearchMapGridWalker.h"
+#include "RTSPathNode.h"
 #include "RTSTiledMap.h"
 
 RTSBreadthFirstSearchMapGridWalker::
@@ -11,8 +13,7 @@ RTSBreadthFirstSearchMapGridWalker(RTSTiledMap * m_pTiledMap) :
 }
 
 RTSBreadthFirstSearchMapGridWalker::~RTSBreadthFirstSearchMapGridWalker() {
-  if (nullptr != m_pTargetShape)
-  {
+  if (nullptr != m_pTargetShape) {
     ge_delete(m_pTargetShape);
   }
 }
@@ -70,8 +71,8 @@ RTSBreadthFirstSearchMapGridWalker::StartSeach(bool stepMode) {
   Vector2I s = GetPosition();
   Vector2I mapSize = GetTiledMap()->getMapSize();
 
-  searching = true;
-  foundPath = false;
+  m_searching = true;
+  m_foundPath = false;
 
   m_openList.clear();
   m_openList.push_back(s); // enqueue source
@@ -81,7 +82,7 @@ RTSBreadthFirstSearchMapGridWalker::StartSeach(bool stepMode) {
                                                   Vector2I::ZERO); // mark source as visited.
   
   if (!stepMode) { //when not in stepMode run entire search all at once
-    while (!m_openList.empty() && !foundPath) {
+    while (!m_openList.empty() && !m_foundPath) {
       StepSearch();
     }
   }
@@ -89,11 +90,11 @@ RTSBreadthFirstSearchMapGridWalker::StartSeach(bool stepMode) {
 
 void
 RTSBreadthFirstSearchMapGridWalker::StepSearch() {
-  GE_ASSERT(searching || !foundPath);
+  GE_ASSERT(m_searching || !m_foundPath);
 
   //TODO: this condition actually happens when no path is possible so mark it as such
   if (m_openList.empty()) {
-    foundPath = true;
+    m_foundPath = true;
     return;
   }
 
@@ -104,11 +105,13 @@ RTSBreadthFirstSearchMapGridWalker::StepSearch() {
   m_openList.pop_front();
 
   //processing all the neighbors of v
+  Vector2I w;
+
   for (SIZE_T i = 0; i < ge_size(s_neighborOffsets); ++i) {
-    Vector2I w = v + s_neighborOffsets[i];
+    w = v + s_neighborOffsets[i];
     //if neighbor is target then a path has been found
     if (GetTargetPos() == w) {
-      foundPath = true;
+      m_foundPath = true;
       break;
     }
 

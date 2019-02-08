@@ -315,7 +315,8 @@ mainMenu(RTSApplication* pApp) {
 
     const ANSICHAR* items[] = {
       "Breath First Search",
-      "Depth First Search"
+      "Depth First Search",
+      "Best First Search"
     };
 
     static const ANSICHAR* item_current = items[0];
