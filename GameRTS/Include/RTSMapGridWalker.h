@@ -8,10 +8,20 @@ using namespace geEngineSDK;
 namespace sf{
   class Shape;
   class RenderTarget;
+  class VertexArray;
 }
 
 class RTSTiledMap;
 class RTSPathNode;
+
+namespace GRID_WALKER_STATE {
+  enum E {
+    kIdle = 0,
+    kSearching,
+    kBacktracking,
+    kDisplaying
+  };
+}
 
 class RTSMapGridWalker
 {
@@ -31,6 +41,9 @@ public:
   virtual void
   StepSearch() = 0;
   
+  virtual void
+  StepBacktrack() = 0;
+
   FORCEINLINE Vector2I
   GetPosition() const { 
     return m_position; 
@@ -38,7 +51,8 @@ public:
 
   FORCEINLINE void
   SetPosition(Vector2I position) {
-    m_position = position; 
+    m_position = position;
+    Reset();
   }
 
   FORCEINLINE Vector2I
@@ -49,6 +63,7 @@ public:
   FORCEINLINE void
   SetTargetPos(Vector2I position) {
     m_targetPos = position;
+    Reset();
   }
 
   FORCEINLINE const sf::Shape*
@@ -56,18 +71,16 @@ public:
     return m_pShape; 
   }
 
-  FORCEINLINE bool
-  IsSearching() const { 
-    return m_searching; 
-  }
-
-  FORCEINLINE bool 
-  HasFoundPath() const {
-    return m_foundPath; 
+  FORCEINLINE GRID_WALKER_STATE::E
+  GetState() const { 
+    return m_CurrentState; 
   }
 
   void
-  ResetPath();
+  ResetClosedList();
+
+  FORCEINLINE void
+  Reset();
 
 protected:
   FORCEINLINE const RTSTiledMap*
@@ -76,14 +89,17 @@ protected:
   }
 
   
-  sf::Shape* m_pShape;
-  List<Vector2I> m_openList;
-  Vector<RTSPathNode*> m_path;
+  sf::Shape*           m_pShape;
+  sf::VertexArray*     m_pPathShape;
 
-  bool m_searching = false;
-  bool m_foundPath = false;
+  List<Vector2I>       m_openList;
+  Vector<RTSPathNode*> m_closedList;
+  Vector<Vector2I>     m_path;
 
-  static const Vector2I s_neighborOffsets[4];
+  GRID_WALKER_STATE::E m_CurrentState;
+
+  static const Vector2I s_nextDirection4[4];
+  static const Vector2I s_nextDirection8[8];
 
 private:
 
@@ -91,3 +107,17 @@ private:
   Vector2I m_position;
   Vector2I m_targetPos;
 };
+
+FORCEINLINE void
+RTSMapGridWalker::Reset()
+{
+  m_CurrentState = GRID_WALKER_STATE::kIdle;
+  ResetClosedList();
+  m_path.clear();
+  m_openList.clear();
+
+  if (m_pPathShape) {
+    ge_delete(m_pPathShape);
+    m_pPathShape = nullptr;
+  }
+}

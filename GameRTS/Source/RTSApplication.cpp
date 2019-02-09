@@ -349,4 +349,8 @@ mainMenu(RTSApplication* pApp) {
   }
   ImGui::End();
 
+
+  GameOptions::s_GUIBlockingMouse = ImGui::IsRootWindowOrAnyChildFocused() ||
+                                    ImGui::IsAnyWindowHovered() ||
+                                    ImGui::IsAnyItemActive();
 }

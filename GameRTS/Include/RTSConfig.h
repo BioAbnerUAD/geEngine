@@ -1,7 +1,7 @@
 #pragma once
 
 //Define only if the map should be isometric
-//#define MAP_IS_ISOMETRIC
+#define MAP_IS_ISOMETRIC
 
 #ifdef MAP_IS_ISOMETRIC
 //Tiles pixel size
@@ -12,6 +12,9 @@
 # define TILESIZE_X 64
 # define TILESIZE_Y 64
 #endif
+
+#define HALFTILESIZE_X (TILESIZE_X / 2)
+#define HALFTILESIZE_Y (TILESIZE_Y / 2)
 
 #include <geModule.h>
 #include <geVector2I.h>
@@ -37,6 +40,8 @@ class GameOptions : public Module<GameOptions>
   static const Vector2I TILEHALFSIZE;
   static const Vector2I BITSFHT_TILEHALFSIZE;
   static const Vector2I BITSHFT_TILESIZE;
+
+  static bool s_GUIBlockingMouse;
 
   static bool s_MoveWalkerOrTarget;
 

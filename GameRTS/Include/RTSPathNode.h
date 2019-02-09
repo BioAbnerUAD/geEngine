@@ -23,6 +23,16 @@ public:
   void
   render(sf::RenderTarget * target,
          const RTSTiledMap& tileMap);
+
+  FORCEINLINE Vector2I 
+  GetPosition() {
+    return m_position;
+  }
+
+  FORCEINLINE Vector2I 
+  GetDirection() {
+    return m_direction;
+  }
 private:
   Vector2I m_position;
   Vector2I m_direction;

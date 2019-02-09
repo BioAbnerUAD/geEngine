@@ -1,17 +1,18 @@
 #pragma once
 
 #include <gePrerequisitesUtil.h>
+
 #include "RTSMapGridWalker.h"
 
 using namespace geEngineSDK;
 
-class RTSBestFirstSearchMapGridWalker :
+class RTSDijkstraMapGridWalker :
   public RTSMapGridWalker
 {
 public:
-  RTSBestFirstSearchMapGridWalker(RTSTiledMap* tileMap);
-  ~RTSBestFirstSearchMapGridWalker();
-  
+  RTSDijkstraMapGridWalker(RTSTiledMap* m_pTiledMap);
+  ~RTSDijkstraMapGridWalker();
+
   bool
   init();
 
@@ -24,13 +25,6 @@ public:
   void
   StepSearch();
 
-  void 
-  StepBacktrack();
-
 private:
-  void
-  PriorityPushBack(Vector2I& w);
-
   sf::Shape* m_pTargetShape;
 };
-

@@ -69,9 +69,11 @@ void
 RTSWorld::update(float deltaTime) {
   m_pTiledMap->update(deltaTime);
 
-  queryLeftClickEvent();
-  queryRightClickEvent();
-
+  if (!GameOptions::s_GUIBlockingMouse) {
+    queryLeftClickEvent();
+    queryRightClickEvent();
+  }
+  
   // If the selected walker index is different than the one registered than update it
   if (m_activeWalkerIndex != GameOptions::s_CurrentWalkerIndex &&
     m_walkersList.size() > GameOptions::s_CurrentWalkerIndex) {
@@ -80,8 +82,11 @@ RTSWorld::update(float deltaTime) {
 
   if (m_activeWalker)
   {
-    if (m_activeWalker->IsSearching() && !m_activeWalker->HasFoundPath()) {
-      StepSearch();
+    if (m_activeWalker->GetState() == GRID_WALKER_STATE::kSearching) {
+      m_activeWalker->StepSearch();
+    }
+    else if (m_activeWalker->GetState() == GRID_WALKER_STATE::kBacktracking) {
+      m_activeWalker->StepBacktrack();
     }
   }
 }
@@ -173,11 +178,6 @@ RTSWorld::StartSearch() {
 }
 
 void
-RTSWorld::StepSearch() {
-  m_activeWalker->StepSearch();
-}
-
-void
 RTSWorld::render() {
   m_pTiledMap->render();
   if (m_activeWalker) {
@@ -200,9 +200,12 @@ RTSWorld::updateResolutionData() {
 
 void
 RTSWorld::setCurrentWalker(const int8 index) {
-  //Revisamos que el walker exista (en modo de debug)
+  //We check that the Walker exists (in debug mode)
   GE_ASSERT(m_walkersList.size() > static_cast<SIZE_T>(index));
 
+  if (m_activeWalker) {
+    m_activeWalker->Reset();
+  }
   m_activeWalker = m_walkersList[index];
   m_activeWalkerIndex = index;
 }

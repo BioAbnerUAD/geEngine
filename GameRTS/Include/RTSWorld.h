@@ -47,9 +47,6 @@ class RTSWorld
   void
   StartSearch();
 
-  void 
-  StepSearch();
-
  private:
 
   void 

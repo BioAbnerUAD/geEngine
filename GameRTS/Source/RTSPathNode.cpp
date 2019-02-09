@@ -13,11 +13,25 @@ RTSPathNode::RTSPathNode(const Vector2I & position,
 
   if (Vector2I::ZERO != direction) {
     m_pDirShape = new sf::RectangleShape(sf::Vector2f(10.f, 1.f));
-    m_pDirShape->setFillColor(sf::Color::White);
+    m_pDirShape->setFillColor(sf::Color::Blue);
 
+# ifdef MAP_IS_ISOMETRIC
+    // project into isometric space
+    float sum = static_cast<float>(direction.y + direction.x);
+    float delta = static_cast<float>(direction.y - direction.x);
+
+    Vector2 isoDir = { -0.5f * delta, 0.2887f * sum };
+
+    Radian dirAngle = Math::atan2(isoDir.y, isoDir.x);
+
+    m_pDirShape->setRotation(dirAngle.valueDegrees());
+# else
     Radian dirAngle = Math::atan2(static_cast<float>(direction.y),
                                   static_cast<float>(direction.x));
+
     m_pDirShape->setRotation(dirAngle.valueDegrees());
+# endif
+
   }
   else {
     m_pDirShape = nullptr;
@@ -39,8 +53,8 @@ void RTSPathNode::render(sf::RenderTarget* target,
   tileMap.getMapToScreenCoords(m_position.x, m_position.y,
                                screenPos.x, screenPos.y);
 
-  m_pShape->setPosition(static_cast<float>(screenPos.x + TILESIZE_X / 2),
-                        static_cast<float> (screenPos.y + TILESIZE_Y / 2));
+  m_pShape->setPosition(static_cast<float>(screenPos.x + HALFTILESIZE_X),
+                        static_cast<float> (screenPos.y + HALFTILESIZE_Y));
 
   target->draw(*m_pShape);
   
