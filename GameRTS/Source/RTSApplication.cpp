@@ -312,26 +312,19 @@ mainMenu(RTSApplication* pApp) {
       10240.0f);
 
     ImGui::Checkbox("Show grid", &GameOptions::s_MapShowGrid);
+  }
+  ImGui::End();
 
-    const ANSICHAR* items[] = {
-      "Breath First Search",
-      "Depth First Search",
-      "Best First Search"
-    };
+  ImGui::Begin("Pathfinding");
+  {
+    GameOptions::s_pPathfinderName = GameOptions::s_pathfinderNames[0];
 
-    static const ANSICHAR* item_current = items[0];
-
-    ImGui::Separator();
-
-    ImGui::Text("Pathfinding");
-
-    if (ImGui::BeginCombo("Pathfinding Algorithm", item_current))
-    {
-      for (int8 n = 0; n < ge_size(items); n++)
-      {
-        bool is_selected = (item_current == items[n]);
-        if (ImGui::Selectable(items[n], is_selected)) {
-          item_current = items[n];
+    if (ImGui::BeginCombo("Pathfinding Algorithm", GameOptions::s_pPathfinderName)) {
+      for (int8 n = 0; n < GameOptions::s_pathfinderNames.size(); n++) {
+        bool is_selected = 
+          (GameOptions::s_pPathfinderName == GameOptions::s_pathfinderNames[n]);
+        if (ImGui::Selectable(GameOptions::s_pathfinderNames[n], is_selected)) {
+          GameOptions::s_pPathfinderName = GameOptions::s_pathfinderNames[n];
           GameOptions::s_CurrentWalkerIndex = n;
         }
         if (is_selected) {
@@ -349,6 +342,19 @@ mainMenu(RTSApplication* pApp) {
   }
   ImGui::End();
 
+  ImGui::Begin("Terrain");
+  {
+    ImGui::Text("Terrain Texture");
+
+    for (SIZE_T i = 0; i < TERRAIN_TYPE::kNumObjects; i++) {
+      ImGui::RadioButton(TERRAIN_TYPE::ES[i].c_str(),
+        &GameOptions::s_selectedTerrainIndex,
+        static_cast<TERRAIN_TYPE::E> (i));
+    }
+
+    ImGui::SliderInt("Brush Size", &GameOptions::s_brushSize, 1, 10);
+  }
+  ImGui::End();
 
   GameOptions::s_GUIBlockingMouse = ImGui::IsRootWindowOrAnyChildFocused() ||
                                     ImGui::IsAnyWindowHovered() ||

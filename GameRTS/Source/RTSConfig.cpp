@@ -29,6 +29,17 @@ bool GameOptions::s_MoveWalkerOrTarget = true;
 
 int8 GameOptions::s_CurrentWalkerIndex = 0;
 
+const vector< ANSICHAR*> GameOptions::s_pathfinderNames = {
+      "Breath First Search",
+      "Depth First Search",
+      "Best First Search"
+};
+
+const ANSICHAR* GameOptions::s_pPathfinderName = nullptr;
+
+int32 GameOptions::s_selectedTerrainIndex = 0;
+
+int32 GameOptions::s_brushSize = 1;
 
 GameOptions&
 g_gameOptions() {

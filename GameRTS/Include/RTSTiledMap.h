@@ -20,6 +20,14 @@ namespace TERRAIN_TYPE {
     kObstacle,
     kNumObjects
   };
+
+  const Vector<String> ES{
+    "Water",
+    "Grass",
+    "Marsh",
+    "Obstacle",
+    "NumObjects"
+  };
 }
 
 class RTSTiledMap

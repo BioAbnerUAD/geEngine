@@ -46,6 +46,14 @@ class GameOptions : public Module<GameOptions>
   static bool s_MoveWalkerOrTarget;
 
   static int8 s_CurrentWalkerIndex;
+
+  static const vector< ANSICHAR*> s_pathfinderNames;
+
+  static const ANSICHAR* s_pPathfinderName;
+
+  static int32 s_selectedTerrainIndex;
+
+  static int32 s_brushSize;
 };
 
 GameOptions&
