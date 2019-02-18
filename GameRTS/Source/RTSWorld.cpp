@@ -6,6 +6,7 @@
 #include "RTSBreadthFirstSearchMapGridWalker.h"
 #include "RTSDepthFirstSearchMapGridWalker.h"
 #include "RTSBestFirstSearchMapGridWalker.h"
+#include "RTSDijkstraMapGridWalker.h"
 
 using namespace RTSGame;
 
@@ -34,6 +35,7 @@ RTSWorld::init(sf::RenderTarget* pTarget) {
   m_walkersList.push_back(ge_new<RTSBreadthFirstSearchMapGridWalker>(m_pTiledMap));
   m_walkersList.push_back(ge_new<RTSDepthFirstSearchMapGridWalker>(m_pTiledMap));
   m_walkersList.push_back(ge_new<RTSBestFirstSearchMapGridWalker>(m_pTiledMap));
+  m_walkersList.push_back(ge_new<RTSDijkstraMapGridWalker>(m_pTiledMap));
 
   //Init the walker objects
 
@@ -93,9 +95,6 @@ RTSWorld::update(float deltaTime) {
 
 void
 RTSWorld::queryLeftClickEvent() {
-  //TODO:(Abner) find some place decent to put these so they're not static
-  static const Vector2I nullMapPos = Vector2I(-1, -1);
-  static Vector2I lastClickedMapPos = nullMapPos;
 
   sf::Vector2i mousePos;
   Vector2I mapPos;
@@ -110,28 +109,9 @@ RTSWorld::queryLeftClickEvent() {
                                       static_cast<int32>(mousePos.y),
                                       mapPos.x, mapPos.y);
 
-    //Make sure it's not the same tile that was already processed
-    if (lastClickedMapPos != mapPos) {
-      //Cycle the terrain types of the clicked tile
-      clickedTileType = m_pTiledMap->getType(mapPos.x, mapPos.y);
-
-      if (TERRAIN_TYPE::kObstacle == clickedTileType) {
-        clickedTileType = TERRAIN_TYPE::kGrass;
-      }
-      else
-      {
-        clickedTileType = TERRAIN_TYPE::kObstacle;
-      }
-
-      m_pTiledMap->setType(mapPos.x, mapPos.y, clickedTileType);
-
-      //mark this tile as already processed
-      lastClickedMapPos = mapPos;
-    }
-  }
-  else if (nullMapPos != lastClickedMapPos) {
-    //reset processed tile
-    lastClickedMapPos = nullMapPos;
+    clickedTileType = static_cast<int8>(GameOptions::s_selectedTerrainIndex);
+    m_pTiledMap->setType(mapPos.x, mapPos.y, clickedTileType);
+    m_pTiledMap->setCost(mapPos.x, mapPos.y, TERRAIN_TYPE::ECost[clickedTileType]);
   }
 }
 
@@ -202,10 +182,20 @@ void
 RTSWorld::setCurrentWalker(const int8 index) {
   //We check that the Walker exists (in debug mode)
   GE_ASSERT(m_walkersList.size() > static_cast<SIZE_T>(index));
+  Vector2I posWalker = Vector2I::ZERO;
+  Vector2I posTarget = Vector2I::ZERO;
 
   if (m_activeWalker) {
     m_activeWalker->Reset();
+
+    // Save positions for replacement walker to be at the same place
+    posWalker = m_activeWalker->GetPosition();
+    posTarget = m_activeWalker->GetTargetPos();
   }
   m_activeWalker = m_walkersList[index];
   m_activeWalkerIndex = index;
+
+  // Put new walker at the same place as old one
+  m_activeWalker->SetPosition(posWalker);
+  m_activeWalker->SetTargetPos(posTarget);
 }

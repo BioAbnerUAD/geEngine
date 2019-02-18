@@ -98,7 +98,9 @@ protected:
 
   GRID_WALKER_STATE::E m_CurrentState;
 
-  static const Vector2I s_nextDirection4[4];
+  /* TODO: enable choosing if diagonal movement is allowed
+  and whether it can cross diagonals that are blocked non diagonaly*/
+  static const Vector2I s_nextDirection4[8];
   static const Vector2I s_nextDirection8[8];
 
 private:

@@ -317,14 +317,15 @@ mainMenu(RTSApplication* pApp) {
 
   ImGui::Begin("Pathfinding");
   {
-    GameOptions::s_pPathfinderName = GameOptions::s_pathfinderNames[0];
+    auto pPathfinderName = 
+      GameOptions::s_pathfinderNames[GameOptions::s_CurrentWalkerIndex];
 
-    if (ImGui::BeginCombo("Pathfinding Algorithm", GameOptions::s_pPathfinderName)) {
+    if (ImGui::BeginCombo("Pathfinding Algorithm", pPathfinderName)) {
       for (int8 n = 0; n < GameOptions::s_pathfinderNames.size(); n++) {
         bool is_selected = 
-          (GameOptions::s_pPathfinderName == GameOptions::s_pathfinderNames[n]);
+          (pPathfinderName == GameOptions::s_pathfinderNames[n]);
         if (ImGui::Selectable(GameOptions::s_pathfinderNames[n], is_selected)) {
-          GameOptions::s_pPathfinderName = GameOptions::s_pathfinderNames[n];
+          pPathfinderName = GameOptions::s_pathfinderNames[n];
           GameOptions::s_CurrentWalkerIndex = n;
         }
         if (is_selected) {

@@ -114,7 +114,6 @@ void
 RTSBestFirstSearchMapGridWalker::StepSearch() {
   GE_ASSERT(m_CurrentState == GRID_WALKER_STATE::kSearching);
 
-  //TODO: this condition actually happens when no path is possible so mark it as such
   if (m_openList.empty()) {
     m_CurrentState = GRID_WALKER_STATE::kDisplaying;
     return;
@@ -133,7 +132,6 @@ RTSBestFirstSearchMapGridWalker::StepSearch() {
     w = v + s_nextDirection4[i];
     //if neighbor is target then a path has been found
     if (GetTargetPos() == w) {
-      //TODO: m_foundPath = true;
       
       //mark w as visited.
       m_closedList[(w.y*mapSize.x) + w.x] = ge_new<RTSPathNode>(w, s_nextDirection4[i]);
@@ -148,11 +146,15 @@ RTSBestFirstSearchMapGridWalker::StepSearch() {
       if (TERRAIN_TYPE::kObstacle != GetTiledMap()->getType(w.x, w.y) &&
         nullptr == m_closedList[(w.y*mapSize.x) + w.x]) {
 
-        PriorityPushBack(w); //enqueue w
+        //if diagonal make sure it has a valid diagonal connection
+        if (TERRAIN_TYPE::kObstacle != GetTiledMap()->getType(v.x, w.y)
+          || TERRAIN_TYPE::kObstacle != GetTiledMap()->getType(w.x, v.y)) {
+          PriorityPushBack(w); //enqueue w
 
-        //mark w as visited.
-        m_closedList[(w.y*mapSize.x) + w.x] = 
-          ge_new<RTSPathNode>(w, s_nextDirection4[i]);
+          //mark w as visited.
+          m_closedList[(w.y*mapSize.x) + w.x] =
+            ge_new<RTSPathNode>(w, s_nextDirection4[i]);
+        }
       }
     }
   }

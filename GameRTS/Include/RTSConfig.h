@@ -49,8 +49,6 @@ class GameOptions : public Module<GameOptions>
 
   static const vector< ANSICHAR*> s_pathfinderNames;
 
-  static const ANSICHAR* s_pPathfinderName;
-
   static int32 s_selectedTerrainIndex;
 
   static int32 s_brushSize;

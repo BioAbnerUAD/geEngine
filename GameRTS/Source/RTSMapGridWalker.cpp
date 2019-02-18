@@ -35,6 +35,10 @@ const Vector2I RTSMapGridWalker::s_nextDirection4[] = {
   Vector2I( 0, -1),
   Vector2I( 1,  0),
   Vector2I(-1,  0),
+  Vector2I( 1,  1),
+  Vector2I( 1, -1),
+  Vector2I(-1,  1),
+  Vector2I(-1, -1),
 };
 
 const Vector2I RTSMapGridWalker::s_nextDirection8[] = {

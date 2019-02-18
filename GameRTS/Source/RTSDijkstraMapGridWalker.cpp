@@ -88,19 +88,21 @@ RTSDijkstraMapGridWalker::StartSeach(bool stepMode) {
   Vector2I mapSize = GetTiledMap()->getMapSize();
 
   Reset();
+  m_foundPath = false;
 
   m_CurrentState = GRID_WALKER_STATE::kSearching;
 
-  m_openList.clear();
-  m_openList.push_back(s); // enqueue source
+  m_openListWithCosts.clear();
+
+  // enqueue source
+  m_openListWithCosts.push_back({ s, 0 }); //zero cost cause I'm already here
 
   // mark source as visited.
   m_closedList[(s.y * mapSize.x) + s.x] = ge_new<RTSPathNode>(GetPosition(),
-    Vector2I::ZERO);
+                                                              Vector2I::ZERO);
 
   if (!stepMode) { //when not in stepMode run entire search all at once
-    while (!m_openList.empty() &&
-      m_CurrentState == GRID_WALKER_STATE::kSearching) {
+    while (m_CurrentState == GRID_WALKER_STATE::kSearching) {
       StepSearch();
     }
     while (m_CurrentState == GRID_WALKER_STATE::kBacktracking) {
@@ -109,49 +111,81 @@ RTSDijkstraMapGridWalker::StartSeach(bool stepMode) {
   }
 }
 
+/*
+TODO: Dijkstra should stop if it finds first path, if it goes a certain amount of steps,
+or even searching all the map
+*/
+
 void
 RTSDijkstraMapGridWalker::StepSearch() {
   GE_ASSERT(m_CurrentState == GRID_WALKER_STATE::kSearching);
+  Vector2I mapSize = GetTiledMap()->getMapSize();
 
-  //TODO: this condition actually happens when no path is possible so mark it as such
-  if (m_openList.empty()) {
+  if (m_foundPath) {
+    //m_openListWithCosts.front().cost > m_closedList[GetTargetPos()]
+    Vector2I t = GetTargetPos();
+    int8 targetCost = m_closedList[(t.y*mapSize.x) + t.x]->GetCost();
+    if (targetCost <= m_openListWithCosts.front().cost)
+    {
+      m_CurrentState = GRID_WALKER_STATE::kBacktracking;
+    }
+  }
+  else if (m_openListWithCosts.empty()) {
     m_CurrentState = GRID_WALKER_STATE::kDisplaying;
     return;
   }
 
-  Vector2I mapSize = GetTiledMap()->getMapSize();
-
   //Removing that vertex from queue, whose neighbors will be visited now
-  Vector2I v = m_openList.front();
-  m_openList.pop_front();
+  Vector2I v = m_openListWithCosts.front().v;
+  int8 vCost = m_openListWithCosts.front().cost;
+
+  m_openListWithCosts.pop_front();
 
   //processing all the neighbors of v
   Vector2I w;
+  int8 wCost;
 
   for (SIZE_T i = 0; i < ge_size(s_nextDirection4); ++i) {
     w = v + s_nextDirection4[i];
+    int32 wIndex = (w.y*mapSize.x) + w.x;
+
     //if neighbor is target then a path has been found
     if (GetTargetPos() == w) {
-      //TODO: m_foundPath = true;
+      if (!m_foundPath) {
+        m_foundPath = true;
+
+        wCost = vCost + GetTiledMap()->getCost(w.x, w.y);
+
+        //mark w as visited.
+        m_closedList[(w.y*mapSize.x) + w.x] 
+          = ge_new<RTSPathNode>(w, s_nextDirection4[i], wCost);
+      }
+      else if (wCost < m_closedList[wIndex]->GetCost()) {
+        m_closedList[wIndex]->SetNewDirAndCost(s_nextDirection4[i], wCost);
+      }
       
-      //mark w as visited.
-      m_closedList[(w.y*mapSize.x) + w.x] = ge_new<RTSPathNode>(w, s_nextDirection4[i]);
-      
-      m_CurrentState = GRID_WALKER_STATE::kBacktracking;
       return;
     }
 
     //make sure it's a valid neighbor
     if (w.x >= 0 && w.x < mapSize.x && w.y >= 0 && w.y < mapSize.y) {
-      //make sure it's not an obstacle and it isn't marked as visited
-      if (TERRAIN_TYPE::kObstacle != GetTiledMap()->getType(w.x, w.y) &&
-        nullptr == m_closedList[(w.y*mapSize.x) + w.x]) {
+      //make sure it's not an obstacle
+      if (TERRAIN_TYPE::kObstacle != GetTiledMap()->getType(w.x, w.y)) {
+        // if it isn't marked as visited just push it
+        wCost = vCost + GetTiledMap()->getCost(w.x, w.y);
+        if (nullptr == m_closedList[wIndex]) {
+          PriorityPushBack(w, wCost); // enqueue w
 
-        m_openList.push_back(w); // enqueue w
+          //mark w as visited.
+          m_closedList[wIndex] =
+            ge_new<RTSPathNode>(w, s_nextDirection4[i], wCost);
+        }
+        else if (wCost < m_closedList[wIndex]->GetCost()) {
+          PriorityPushBack(w, wCost); // enqueue w again
 
-        //mark w as visited.
-        m_closedList[(w.y*mapSize.x) + w.x] = 
-          ge_new<RTSPathNode>(w, s_nextDirection4[i]);
+          //update lesser cost for node
+          m_closedList[wIndex]->SetNewDirAndCost(s_nextDirection4[i], wCost);
+        }
       }
     }
   }
@@ -174,4 +208,19 @@ RTSDijkstraMapGridWalker::StepBacktrack() {
   m_pPathShape = ge_new<sf::VertexArray>(sf::LineStrip, m_path.size());
 
   m_CurrentState = GRID_WALKER_STATE::kDisplaying;
+}
+
+// TODO: Move this to somewhere else and also bestFirstSearch's Priority Push Back
+void 
+RTSDijkstraMapGridWalker::PriorityPushBack(Vector2I v, int8 vCost){
+  Vector2I target = GetTargetPos();
+
+  for (auto it = m_openListWithCosts.begin(); it != m_openListWithCosts.end(); ++it) {
+    if (it->cost > vCost) {
+      m_openListWithCosts.insert(it, { v, vCost });
+      return;
+    }
+  }
+
+  m_openListWithCosts.push_back({v, vCost});
 }

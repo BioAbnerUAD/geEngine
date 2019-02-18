@@ -28,6 +28,13 @@ namespace TERRAIN_TYPE {
     "Obstacle",
     "NumObjects"
   };
+
+  const Vector<int8> ECost{
+    5,
+    1,
+    2,
+    127
+  };
 }
 
 class RTSTiledMap

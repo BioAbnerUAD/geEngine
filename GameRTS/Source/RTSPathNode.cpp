@@ -1,18 +1,29 @@
 #include "RTSPathNode.h"
 
 #include <SFML/Graphics/RectangleShape.hpp>
+#include <SFML/Graphics/Text.hpp>
 #include "RTSTiledMap.h"
+
+#ifdef MAP_IS_ISOMETRIC
+# define COSTTEXT_OFFSET sf::Vector2f(-4.f, -0.f)
+#else
+# define COSTTEXT_OFFSET sf::Vector2f(-4.f, -4.f)
+#endif // MAP_IS_ISOMETRIC
+
+
+sf::Font* RTSPathNode::s_arialFont = nullptr;
 
 RTSPathNode::RTSPathNode(const Vector2I & position,
                          const Vector2I & direction) :
-  m_position(position), m_direction(direction) {
+  m_position(position), m_direction(direction), 
+  m_cost(-1), m_pCostText(nullptr) {
 
-  m_pShape = new sf::RectangleShape(sf::Vector2f(5.f, 5.f));
+  m_pShape = ge_new<sf::RectangleShape>(sf::Vector2f(5.f, 5.f));
   m_pShape->setFillColor(sf::Color::Red);
   m_pShape->setOrigin(2.5f, 2.5f);
 
   if (Vector2I::ZERO != direction) {
-    m_pDirShape = new sf::RectangleShape(sf::Vector2f(10.f, 1.f));
+    m_pDirShape = ge_new<sf::RectangleShape>(sf::Vector2f(10.f, 1.f));
     m_pDirShape->setFillColor(sf::Color::Blue);
 
 # ifdef MAP_IS_ISOMETRIC
@@ -23,19 +34,37 @@ RTSPathNode::RTSPathNode(const Vector2I & position,
     Vector2 isoDir = { -0.5f * delta, 0.2887f * sum };
 
     Radian dirAngle = Math::atan2(isoDir.y, isoDir.x);
-
-    m_pDirShape->setRotation(dirAngle.valueDegrees());
 # else
     Radian dirAngle = Math::atan2(static_cast<float>(direction.y),
                                   static_cast<float>(direction.x));
-
-    m_pDirShape->setRotation(dirAngle.valueDegrees());
 # endif
 
+    m_pDirShape->setRotation(dirAngle.valueDegrees());
   }
   else {
     m_pDirShape = nullptr;
   }
+}
+
+RTSPathNode::RTSPathNode(const Vector2I & position, 
+                         const Vector2I & direction, 
+                         int8 cost) : 
+  RTSPathNode(position,direction)
+{
+  m_cost = cost;
+
+  if (nullptr == s_arialFont) {
+    s_arialFont = ge_new<sf::Font>();
+    if (nullptr == s_arialFont) {
+      GE_EXCEPT(InvalidStateException, "Couldn't create a Font");
+    }
+
+    if (!s_arialFont->loadFromFile("Fonts/arial.ttf")) {
+      GE_EXCEPT(FileNotFoundException, "Arial font not found");
+    }
+  }
+
+  m_pCostText = new sf::Text(toString(m_cost).c_str(), *s_arialFont, 10);
 }
 
 RTSPathNode::~RTSPathNode() {
@@ -45,10 +74,14 @@ RTSPathNode::~RTSPathNode() {
   if (nullptr != m_pDirShape) {
     ge_delete(m_pDirShape);
   }
+  if (nullptr != m_pCostText) {
+    ge_delete(m_pCostText);
+  }
 }
 
-void RTSPathNode::render(sf::RenderTarget* target,
-                         const RTSTiledMap& tileMap) {
+void 
+RTSPathNode::render(sf::RenderTarget* target,
+                    const RTSTiledMap& tileMap) {
   Vector2I screenPos;
   tileMap.getMapToScreenCoords(m_position.x, m_position.y,
                                screenPos.x, screenPos.y);
@@ -62,5 +95,21 @@ void RTSPathNode::render(sf::RenderTarget* target,
     m_pDirShape->setPosition(m_pShape->getPosition());
 
     target->draw(*m_pDirShape);
+  }
+
+  if (nullptr != m_pCostText) {
+    m_pCostText->setPosition(m_pShape->getPosition() + COSTTEXT_OFFSET);
+
+    target->draw(*m_pCostText);
+  }
+}
+
+void
+RTSPathNode::SetNewDirAndCost(Vector2I newDir, int8 newCost) {
+  m_direction = newDir;
+  m_cost = newCost;
+
+  if (nullptr != m_pCostText) {
+    m_pCostText->setString(toString(m_cost).c_str());
   }
 }
