@@ -33,7 +33,8 @@ const vector< ANSICHAR*> GameOptions::s_pathfinderNames = {
       "Breath First Search",
       "Depth First Search",
       "Best First Search",
-      "Dijkstra"
+      "Dijkstra",
+      "AStar"
 };
 
 int32 GameOptions::s_selectedTerrainIndex = 0;

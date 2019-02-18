@@ -7,6 +7,7 @@
 #include "RTSDepthFirstSearchMapGridWalker.h"
 #include "RTSBestFirstSearchMapGridWalker.h"
 #include "RTSDijkstraMapGridWalker.h"
+#include "RTSAStarMapGridWalker.h"
 
 using namespace RTSGame;
 
@@ -36,6 +37,7 @@ RTSWorld::init(sf::RenderTarget* pTarget) {
   m_walkersList.push_back(ge_new<RTSDepthFirstSearchMapGridWalker>(m_pTiledMap));
   m_walkersList.push_back(ge_new<RTSBestFirstSearchMapGridWalker>(m_pTiledMap));
   m_walkersList.push_back(ge_new<RTSDijkstraMapGridWalker>(m_pTiledMap));
+  m_walkersList.push_back(ge_new<RTSAStarMapGridWalker>(m_pTiledMap));
 
   //Init the walker objects
 

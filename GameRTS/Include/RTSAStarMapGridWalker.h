@@ -30,17 +30,16 @@ public:
   StepBacktrack();
 
 private:
-  struct nodeAndCost
+  struct AStarNode
   {
     Vector2I v;
     int8 cost;
+    int32 distance;
   };
 
   void
   PriorityPushBack(Vector2I v, int8 vCost);
 
-  bool m_foundPath = false;
-
   sf::Shape* m_pTargetShape;
-  List<nodeAndCost> m_openListWithCosts;
+  List<AStarNode> m_openListAstar;
 };

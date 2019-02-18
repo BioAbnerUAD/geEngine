@@ -151,10 +151,10 @@ RTSDijkstraMapGridWalker::StepSearch() {
 
     //if neighbor is target then a path has been found
     if (GetTargetPos() == w) {
+      wCost = vCost + GetTiledMap()->getCost(w.x, w.y);
+
       if (!m_foundPath) {
         m_foundPath = true;
-
-        wCost = vCost + GetTiledMap()->getCost(w.x, w.y);
 
         //mark w as visited.
         m_closedList[(w.y*mapSize.x) + w.x] 
@@ -213,7 +213,6 @@ RTSDijkstraMapGridWalker::StepBacktrack() {
 // TODO: Move this to somewhere else and also bestFirstSearch's Priority Push Back
 void 
 RTSDijkstraMapGridWalker::PriorityPushBack(Vector2I v, int8 vCost){
-  Vector2I target = GetTargetPos();
 
   for (auto it = m_openListWithCosts.begin(); it != m_openListWithCosts.end(); ++it) {
     if (it->cost > vCost) {

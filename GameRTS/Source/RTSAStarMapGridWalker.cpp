@@ -86,14 +86,13 @@ RTSAStarMapGridWalker::StartSeach(bool stepMode) {
   Vector2I mapSize = GetTiledMap()->getMapSize();
 
   Reset();
-  m_foundPath = false;
 
   m_CurrentState = GRID_WALKER_STATE::kSearching;
 
-  m_openListWithCosts.clear();
+  m_openListAstar.clear();
 
   // enqueue source
-  m_openListWithCosts.push_back({ s, 0 }); //zero cost cause I'm already here
+  m_openListAstar.push_back({ s, 0 }); //zero cost cause I'm already here
 
   // mark source as visited.
   m_closedList[(s.y * mapSize.x) + s.x] = ge_new<RTSPathNode>(GetPosition(),
@@ -119,24 +118,11 @@ RTSAStarMapGridWalker::StepSearch() {
   GE_ASSERT(m_CurrentState == GRID_WALKER_STATE::kSearching);
   Vector2I mapSize = GetTiledMap()->getMapSize();
 
-  if (m_foundPath) {
-    //m_openListWithCosts.front().cost > m_closedList[GetTargetPos()]
-    Vector2I t = GetTargetPos();
-    int8 targetCost = m_closedList[(t.y*mapSize.x) + t.x]->GetCost();
-    if (targetCost <= m_openListWithCosts.front().cost) {
-      m_CurrentState = GRID_WALKER_STATE::kBacktracking;
-    }
-  }
-  else if (m_openListWithCosts.empty()) {
-    m_CurrentState = GRID_WALKER_STATE::kDisplaying;
-    return;
-  }
-
   //Removing that vertex from queue, whose neighbors will be visited now
-  Vector2I v = m_openListWithCosts.front().v;
-  int8 vCost = m_openListWithCosts.front().cost;
+  Vector2I v = m_openListAstar.front().v;
+  int8 vCost = m_openListAstar.front().cost;
 
-  m_openListWithCosts.pop_front();
+  m_openListAstar.pop_front();
 
   //processing all the neighbors of v
   Vector2I w;
@@ -148,18 +134,13 @@ RTSAStarMapGridWalker::StepSearch() {
 
     //if neighbor is target then a path has been found
     if (GetTargetPos() == w) {
-      if (!m_foundPath) {
-        m_foundPath = true;
+      wCost = vCost + GetTiledMap()->getCost(w.x, w.y);
 
-        wCost = vCost + GetTiledMap()->getCost(w.x, w.y);
+      //mark w as visited.
+      m_closedList[(w.y*mapSize.x) + w.x]
+        = ge_new<RTSPathNode>(w, s_nextDirection4[i], wCost);
 
-        //mark w as visited.
-        m_closedList[(w.y*mapSize.x) + w.x] 
-          = ge_new<RTSPathNode>(w, s_nextDirection4[i], wCost);
-      }
-      else if (wCost < m_closedList[wIndex]->GetCost()) {
-        m_closedList[wIndex]->SetNewDirAndCost(s_nextDirection4[i], wCost);
-      }
+      m_CurrentState = GRID_WALKER_STATE::kBacktracking;
       
       return;
     }
@@ -175,7 +156,7 @@ RTSAStarMapGridWalker::StepSearch() {
 
           //mark w as visited.
           m_closedList[wIndex] =
-            ge_new<RTSPathNode>(w, s_nextDirection4[i], wCost);
+                ge_new<RTSPathNode>(w, s_nextDirection4[i], wCost);
         }
         else if (wCost < m_closedList[wIndex]->GetCost()) {
           PriorityPushBack(w, wCost); // enqueue w again
@@ -211,13 +192,14 @@ RTSAStarMapGridWalker::StepBacktrack() {
 void 
 RTSAStarMapGridWalker::PriorityPushBack(Vector2I v, int8 vCost) {
   Vector2I target = GetTargetPos();
+  int32 distance = v.manhattanDist(target);
 
-  for (auto it = m_openListWithCosts.begin(); it != m_openListWithCosts.end(); ++it) {
-    if (it->cost > vCost) {
-      m_openListWithCosts.insert(it, { v, vCost });
+  for (auto it = m_openListAstar.begin(); it != m_openListAstar.end(); ++it) {
+    if (it->cost + it->distance > vCost + distance) {
+      m_openListAstar.insert(it, { v, vCost, distance });
       return;
     }
   }
 
-  m_openListWithCosts.push_back({v, vCost});
+  m_openListAstar.push_back({v, vCost, distance });
 }

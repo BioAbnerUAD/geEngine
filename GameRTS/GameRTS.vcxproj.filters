@@ -71,6 +71,9 @@
     <ClCompile Include="Source\RTSDijkstraMapGridWalker.cpp">
       <Filter>Source Files\Pathfinding</Filter>
     </ClCompile>
+    <ClCompile Include="Source\RTSAStarMapGridWalker.cpp">
+      <Filter>Source Files\Pathfinding</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Include\RTSUnitType.h">
@@ -107,6 +110,9 @@
       <Filter>Source Files\Pathfinding</Filter>
     </ClInclude>
     <ClInclude Include="Include\RTSDijkstraMapGridWalker.h">
+      <Filter>Source Files\Pathfinding</Filter>
+    </ClInclude>
+    <ClInclude Include="Include\RTSAStarMapGridWalker.h">
       <Filter>Source Files\Pathfinding</Filter>
     </ClInclude>
   </ItemGroup>
