@@ -11,7 +11,7 @@
 #endif // MAP_IS_ISOMETRIC
 
 
-sf::Font* RTSPathNode::s_arialFont = nullptr;
+UPtr<sf::Font> RTSPathNode::s_pArialFont = ge_unique_ptr<sf::Font>(nullptr);
 
 RTSPathNode::RTSPathNode(const Vector2I & position,
                          const Vector2I & direction) :
@@ -48,23 +48,23 @@ RTSPathNode::RTSPathNode(const Vector2I & position,
 
 RTSPathNode::RTSPathNode(const Vector2I & position, 
                          const Vector2I & direction, 
-                         int8 cost) : 
-  RTSPathNode(position,direction)
+                         int8 cost) :
+  RTSPathNode(position, direction)
 {
   m_cost = cost;
 
-  if (nullptr == s_arialFont) {
-    s_arialFont = ge_new<sf::Font>();
-    if (nullptr == s_arialFont) {
+  if (!s_pArialFont) {
+    s_pArialFont = ge_unique_ptr_new<sf::Font>();
+    if (!s_pArialFont) {
       GE_EXCEPT(InvalidStateException, "Couldn't create a Font");
     }
 
-    if (!s_arialFont->loadFromFile("Fonts/arial.ttf")) {
+    if (!s_pArialFont->loadFromFile("Fonts/arial.ttf")) {
       GE_EXCEPT(FileNotFoundException, "Arial font not found");
     }
   }
 
-  m_pCostText = new sf::Text(toString(m_cost).c_str(), *s_arialFont, 10);
+  m_pCostText = ge_new<sf::Text>(toString(m_cost).c_str(), *s_pArialFont, 10);
 }
 
 RTSPathNode::~RTSPathNode() {
@@ -91,16 +91,16 @@ RTSPathNode::render(sf::RenderTarget* target,
 
   target->draw(*m_pShape);
   
-  if (nullptr != m_pDirShape) {
-    m_pDirShape->setPosition(m_pShape->getPosition());
-
-    target->draw(*m_pDirShape);
-  }
-
   if (nullptr != m_pCostText) {
     m_pCostText->setPosition(m_pShape->getPosition() + COSTTEXT_OFFSET);
 
     target->draw(*m_pCostText);
+  }
+
+  if (nullptr != m_pDirShape) {
+    m_pDirShape->setPosition(m_pShape->getPosition());
+
+    target->draw(*m_pDirShape);
   }
 }
 
@@ -108,6 +108,23 @@ void
 RTSPathNode::SetNewDirAndCost(Vector2I newDir, int8 newCost) {
   m_direction = newDir;
   m_cost = newCost;
+
+  if (nullptr != m_pDirShape) {
+#  ifdef MAP_IS_ISOMETRIC
+    // project into isometric space
+    float sum = static_cast<float>(newDir.y + newDir.x);
+    float delta = static_cast<float>(newDir.y - newDir.x);
+
+    Vector2 isoDir = { -0.5f * delta, 0.2887f * sum };
+
+    Radian dirAngle = Math::atan2(isoDir.y, isoDir.x);
+#  else
+    Radian dirAngle = Math::atan2(static_cast<float>(newDir.y),
+                                  static_cast<float>(newDir.x));
+#  endif
+
+    m_pDirShape->setRotation(dirAngle.valueDegrees());
+  }
 
   if (nullptr != m_pCostText) {
     m_pCostText->setString(toString(m_cost).c_str());

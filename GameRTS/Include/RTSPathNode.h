@@ -5,7 +5,7 @@
 
 using namespace geEngineSDK;
 
-namespace sf 
+namespace sf
 {
   class Shape;
   class RenderTarget;
@@ -27,9 +27,11 @@ public:
 
   ~RTSPathNode();
 
+  void 
+  render(sf::RenderTarget * target, const RTSTiledMap & tileMap);
+
   void
-  render(sf::RenderTarget * target,
-         const RTSTiledMap& tileMap);
+  SetNewDirAndCost(Vector2I newDir, int8 newCost);
 
   FORCEINLINE Vector2I 
   GetPosition() const {
@@ -46,18 +48,15 @@ public:
     return m_cost;
   }
 
-  void
-  SetNewDirAndCost(Vector2I newDir, int8 newCost);
-
 private:
-  static sf::Font* s_arialFont;
+  static UPtr<sf::Font>  s_pArialFont;
 
-  Vector2I m_position;
-  Vector2I m_direction;
-  int8 m_cost;
-  
-  sf::Shape* m_pShape;
-  sf::Shape* m_pDirShape;
-  sf::Text* m_pCostText;
+  sf::Shape*  m_pShape;
+  sf::Shape*  m_pDirShape;
+  sf::Text*   m_pCostText;
+
+  Vector2I    m_position;
+  Vector2I    m_direction;
+  int8        m_cost;
 };
 

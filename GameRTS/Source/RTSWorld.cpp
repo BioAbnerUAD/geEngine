@@ -30,7 +30,7 @@ RTSWorld::init(sf::RenderTarget* pTarget) {
   //Initialize the map (right now it's an empty map)
   m_pTiledMap = ge_new<RTSTiledMap>();
   GE_ASSERT(m_pTiledMap);
-  m_pTiledMap->init(m_pTarget, Vector2I(256, 256));
+  m_pTiledMap->init(m_pTarget, Vector2I(4096, 4096));
 
   //Create the path finding classes and push them to the walker list
   m_walkersList.push_back(ge_new<RTSBreadthFirstSearchMapGridWalker>(m_pTiledMap));
@@ -84,7 +84,7 @@ RTSWorld::update(float deltaTime) {
     setCurrentWalker(GameOptions::s_CurrentWalkerIndex);
   }
 
-  if (m_activeWalker)
+  if (nullptr != m_activeWalker)
   {
     if (m_activeWalker->GetState() == GRID_WALKER_STATE::kSearching) {
       m_activeWalker->StepSearch();
@@ -103,7 +103,9 @@ RTSWorld::queryLeftClickEvent() {
   int8 clickedTileType;
 
   //This cycles the type of terrain on the tile that is being clicked on
-  if (sf::Mouse::isButtonPressed(sf::Mouse::Left)) {
+  if (sf::Mouse::isButtonPressed(sf::Mouse::Left) && 
+      (m_activeWalker->GetState() == GRID_WALKER_STATE::kIdle ||
+      m_activeWalker->GetState() == GRID_WALKER_STATE::kDisplaying)) {
     //Check which tile was clicked on
     mousePos = sf::Mouse::getPosition();
 
@@ -112,8 +114,33 @@ RTSWorld::queryLeftClickEvent() {
                                       mapPos.x, mapPos.y);
 
     clickedTileType = static_cast<int8>(GameOptions::s_selectedTerrainIndex);
-    m_pTiledMap->setType(mapPos.x, mapPos.y, clickedTileType);
-    m_pTiledMap->setCost(mapPos.x, mapPos.y, TERRAIN_TYPE::ECost[clickedTileType]);
+
+    if (GameOptions::s_brushSize <= 1) {
+      m_pTiledMap->setType(mapPos.x, mapPos.y, clickedTileType);
+      m_pTiledMap->setCost(mapPos.x, mapPos.y, TERRAIN_TYPE::ECost[clickedTileType]);
+    }
+    else {
+      Vector2I mapSize = m_pTiledMap->getMapSize();
+      int32 halfSizeL = GameOptions::s_brushSize / 2;
+      int32 halfSizeU = (GameOptions::s_brushSize + 1) / 2;
+
+      int32 lowerX = Math::max(0, mapPos.x - halfSizeL);
+      int32 lowerY = Math::max(0, mapPos.y - halfSizeL);
+      int32 upperX = Math::min(mapSize.x - 1, mapPos.x + halfSizeU);
+      int32 upperY = Math::min(mapSize.y - 1, mapPos.y + halfSizeU);
+
+      for (int32 i = lowerX; i < upperX; i++) {
+        for (int32 j = lowerY; j < upperY; j++) {
+          m_pTiledMap->setType(i, j, clickedTileType);
+          m_pTiledMap->setCost(i, j, TERRAIN_TYPE::ECost[clickedTileType]);
+        }
+      }
+
+    }
+
+    if (m_activeWalker->GetState() == GRID_WALKER_STATE::kDisplaying) {
+      m_activeWalker->Reset();
+    }
   }
 }
 
@@ -160,6 +187,11 @@ RTSWorld::StartSearch() {
 }
 
 void
+RTSWorld::StopSearch() {
+  m_activeWalker->Reset();
+}
+
+void
 RTSWorld::render() {
   m_pTiledMap->render();
   if (m_activeWalker) {
@@ -200,4 +232,9 @@ RTSWorld::setCurrentWalker(const int8 index) {
   // Put new walker at the same place as old one
   m_activeWalker->SetPosition(posWalker);
   m_activeWalker->SetTargetPos(posTarget);
+}
+
+int8 
+RTSWorld::getCurrentWalkerState() {
+  return static_cast<int8>(m_activeWalker->GetState());
 }

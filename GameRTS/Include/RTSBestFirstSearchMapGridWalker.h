@@ -24,9 +24,6 @@ public:
   void
   StepSearch();
 
-  void 
-  StepBacktrack();
-
 private:
   void
   PriorityPushBack(Vector2I& w);

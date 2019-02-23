@@ -13,8 +13,8 @@
 # define TILESIZE_Y 64
 #endif
 
-#define HALFTILESIZE_X (TILESIZE_X / 2)
-#define HALFTILESIZE_Y (TILESIZE_Y / 2)
+#define HALFTILESIZE_X GameOptions::TILEHALFSIZE.x
+#define HALFTILESIZE_Y GameOptions::TILEHALFSIZE.y
 
 #include <geModule.h>
 #include <geVector2I.h>

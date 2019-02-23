@@ -56,10 +56,8 @@ RTSAStarMapGridWalker::render(sf::RenderTarget * target) {
 
   if (m_CurrentState != GRID_WALKER_STATE::kIdle) {
     //draw nodes in closed list
-    for each (auto node in m_closedList) {
-      if (nullptr != node) {
-        node->render(target, *GetTiledMap());
-      }
+    for (auto it = m_fastClosedList.begin(); it != m_fastClosedList.end(); ++it) {
+      (*it)->render(target, *GetTiledMap());
     }
 
     if (nullptr != m_pPathShape) {
@@ -82,8 +80,9 @@ RTSAStarMapGridWalker::render(sf::RenderTarget * target) {
 
 void
 RTSAStarMapGridWalker::StartSeach(bool stepMode) {
-  Vector2I s = GetPosition();
   Vector2I mapSize = GetTiledMap()->getMapSize();
+  Vector2I s = GetPosition();
+  int32 sIndex = (s.y * mapSize.x) + s.x;
 
   Reset();
 
@@ -95,8 +94,8 @@ RTSAStarMapGridWalker::StartSeach(bool stepMode) {
   m_openListAstar.push_back({ s, 0 }); //zero cost cause I'm already here
 
   // mark source as visited.
-  m_closedList[(s.y * mapSize.x) + s.x] = ge_new<RTSPathNode>(GetPosition(),
-                                                              Vector2I::ZERO);
+  m_closedList[sIndex] = ge_new<RTSPathNode>(GetPosition(), Vector2I::ZERO);
+  m_fastClosedList.push_front(m_closedList[sIndex]);
 
   if (!stepMode) { //when not in stepMode run entire search all at once
     while (m_CurrentState == GRID_WALKER_STATE::kSearching) {
@@ -116,7 +115,12 @@ or even searching all the map
 void
 RTSAStarMapGridWalker::StepSearch() {
   GE_ASSERT(m_CurrentState == GRID_WALKER_STATE::kSearching);
+  if (m_openListAstar.empty()) {
+    m_CurrentState = GRID_WALKER_STATE::kBacktracking;
+  }
+
   Vector2I mapSize = GetTiledMap()->getMapSize();
+  Vector2I target = GetTargetPos();
 
   //Removing that vertex from queue, whose neighbors will be visited now
   Vector2I v = m_openListAstar.front().v;
@@ -124,21 +128,24 @@ RTSAStarMapGridWalker::StepSearch() {
 
   m_openListAstar.pop_front();
 
-  //processing all the neighbors of v
+  //required variables
   Vector2I w;
   int8 wCost;
+  int32 wIndex;
+  uint32 distance;
 
-  for (SIZE_T i = 0; i < ge_size(s_nextDirection4); ++i) {
-    w = v + s_nextDirection4[i];
-    int32 wIndex = (w.y*mapSize.x) + w.x;
+  //processing all the neighbors of v
+  for (SIZE_T i = 0; i < s_nextDirection.size(); ++i) {
+    w = v + s_nextDirection[i];
+    wIndex = (w.y*mapSize.x) + w.x;
 
     //if neighbor is target then a path has been found
     if (GetTargetPos() == w) {
       wCost = vCost + GetTiledMap()->getCost(w.x, w.y);
 
       //mark w as visited.
-      m_closedList[(w.y*mapSize.x) + w.x]
-        = ge_new<RTSPathNode>(w, s_nextDirection4[i], wCost);
+      m_closedList[wIndex] = ge_new<RTSPathNode>(w, s_nextDirection[i], wCost);
+      m_fastClosedList.push_front(m_closedList[wIndex]);
 
       m_CurrentState = GRID_WALKER_STATE::kBacktracking;
       
@@ -151,48 +158,33 @@ RTSAStarMapGridWalker::StepSearch() {
       if (TERRAIN_TYPE::kObstacle != GetTiledMap()->getType(w.x, w.y)) {
         // if it isn't marked as visited just push it
         wCost = vCost + GetTiledMap()->getCost(w.x, w.y);
+        distance = v.manhattanDist(target);
+
         if (nullptr == m_closedList[wIndex]) {
           PriorityPushBack(w, wCost); // enqueue w
 
           //mark w as visited.
           m_closedList[wIndex] =
-                ge_new<RTSPathNode>(w, s_nextDirection4[i], wCost);
+                ge_new<RTSPathNode>(w, s_nextDirection[i], wCost);
+
+          m_fastClosedList.push_front(m_closedList[wIndex]);
         }
         else if (wCost < m_closedList[wIndex]->GetCost()) {
           PriorityPushBack(w, wCost); // enqueue w again
 
           //update lesser cost for node
-          m_closedList[wIndex]->SetNewDirAndCost(s_nextDirection4[i], wCost);
+          m_closedList[wIndex]->SetNewDirAndCost(s_nextDirection[i], wCost);
         }
       }
     }
   }
 }
 
-void
-RTSAStarMapGridWalker::StepBacktrack() {
-  GE_ASSERT(m_CurrentState == GRID_WALKER_STATE::kBacktracking);
-
-  Vector2I v = GetTargetPos();
-  Vector2I mapSize = GetTiledMap()->getMapSize();
-
-  m_path.push_back(GetTargetPos());
-
-  while (v != GetPosition()) {
-    v -= m_closedList[(v.y*mapSize.x) + v.x]->GetDirection();
-    m_path.push_back(v);
-  }
-
-  m_pPathShape = ge_new<sf::VertexArray>(sf::LineStrip, m_path.size());
-
-  m_CurrentState = GRID_WALKER_STATE::kDisplaying;
-}
-
 // TODO: Move this to somewhere else and also bestFirstSearch's Priority Push Back
 void 
 RTSAStarMapGridWalker::PriorityPushBack(Vector2I v, int8 vCost) {
   Vector2I target = GetTargetPos();
-  int32 distance = v.manhattanDist(target);
+  uint32 distance = v.manhattanDist(target);
 
   for (auto it = m_openListAstar.begin(); it != m_openListAstar.end(); ++it) {
     if (it->cost + it->distance > vCost + distance) {

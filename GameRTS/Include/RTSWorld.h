@@ -44,8 +44,14 @@ class RTSWorld
   void
   setCurrentWalker(const int8 index);
 
+  int8
+  getCurrentWalkerState();
+
   void
   StartSearch();
+
+  void 
+  StopSearch();
 
  private:
 

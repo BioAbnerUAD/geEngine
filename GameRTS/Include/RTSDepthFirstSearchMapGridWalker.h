@@ -25,9 +25,6 @@ public:
   void
   StepSearch();
 
-  void
-  StepBacktrack();
-
 private:
   sf::Shape* m_pTargetShape;
 };

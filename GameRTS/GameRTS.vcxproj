@@ -196,6 +196,7 @@
     <ClInclude Include="Include\RTSConfig.h" />
     <ClInclude Include="Include\RTSDepthFirstSearchMapGridWalker.h" />
     <ClInclude Include="Include\RTSDijkstraMapGridWalker.h" />
+    <ClInclude Include="Include\RTSExtensions.h" />
     <ClInclude Include="Include\RTSMapGridWalker.h" />
     <ClInclude Include="Include\RTSPathNode.h" />
     <ClInclude Include="Include\RTSTexture.h" />

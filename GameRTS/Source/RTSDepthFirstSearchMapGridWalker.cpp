@@ -59,10 +59,8 @@ RTSDepthFirstSearchMapGridWalker::render(sf::RenderTarget * target)
 
   if (m_CurrentState != GRID_WALKER_STATE::kIdle) {
     //draw nodes in closed list
-    for each (auto node in m_closedList) {
-      if (nullptr != node) {
-        node->render(target, *GetTiledMap());
-      }
+    for (auto it = m_fastClosedList.begin(); it != m_fastClosedList.end(); ++it) {
+      (*it)->render(target, *GetTiledMap());
     }
 
     if (nullptr != m_pPathShape) {
@@ -85,8 +83,9 @@ RTSDepthFirstSearchMapGridWalker::render(sf::RenderTarget * target)
 
 void
 RTSDepthFirstSearchMapGridWalker::StartSeach(bool stepMode) {
-  Vector2I s = GetPosition();
   Vector2I mapSize = GetTiledMap()->getMapSize();
+  Vector2I s = GetPosition();
+  int32 sIndex = (s.y * mapSize.x) + s.x;
 
   Reset();
 
@@ -96,8 +95,8 @@ RTSDepthFirstSearchMapGridWalker::StartSeach(bool stepMode) {
   m_openList.push_back(s); // push source into stack
 
   // mark source as visited.
-  m_closedList[(s.y * mapSize.x) + s.x] = ge_new<RTSPathNode>(GetPosition(),
-                                                              Vector2I::ZERO);
+  m_closedList[sIndex] = ge_new<RTSPathNode>(GetPosition(), Vector2I::ZERO);
+  m_fastClosedList.push_front(m_closedList[sIndex]);
 
   if (!stepMode) { //when not in stepMode run entire search all at once
     while (!m_openList.empty() && 
@@ -127,14 +126,17 @@ RTSDepthFirstSearchMapGridWalker::StepSearch() {
 
   //processing all the neighbors of v
   Vector2I w;
+  int32 wIndex;
 
-  for (SIZE_T i = 0; i < ge_size(s_nextDirection4); ++i) {
-    w = v + s_nextDirection4[i];
+  for (SIZE_T i = 0; i < s_nextDirection.size(); ++i) {
+    w = v + s_nextDirection[i];
+    wIndex = (w.y*mapSize.x) + w.x;
     //if neighbor is target then a path has been found
     if (GetTargetPos() == w) {
       
       //mark w as visited.
-      m_closedList[(w.y*mapSize.x) + w.x] = ge_new<RTSPathNode>(w, s_nextDirection4[i]);
+      m_closedList[wIndex] = ge_new<RTSPathNode>(w, s_nextDirection[i]);
+      m_fastClosedList.push_front(m_closedList[wIndex]);
       
       m_CurrentState = GRID_WALKER_STATE::kBacktracking;
       return;
@@ -144,33 +146,14 @@ RTSDepthFirstSearchMapGridWalker::StepSearch() {
     if (w.x >= 0 && w.x < mapSize.x && w.y >= 0 && w.y < mapSize.y) {
       //make sure it's not an obstacle and it isn't marked as visited
       if (TERRAIN_TYPE::kObstacle != GetTiledMap()->getType(w.x, w.y) &&
-        nullptr == m_closedList[(w.y*mapSize.x) + w.x]) {
+        nullptr == m_closedList[wIndex]) {
 
         m_openList.push_back(w); //push w into stack
 
         //mark w as visited.
-        m_closedList[(w.y*mapSize.x) + w.x] = 
-          ge_new<RTSPathNode>(w, s_nextDirection4[i]);
+        m_closedList[wIndex] = ge_new<RTSPathNode>(w, s_nextDirection[i]);
+        m_fastClosedList.push_front(m_closedList[wIndex]);
       }
     }
   }
-}
-
-void
-RTSDepthFirstSearchMapGridWalker::StepBacktrack() {
-  GE_ASSERT(m_CurrentState == GRID_WALKER_STATE::kBacktracking);
-  
-  Vector2I v = GetTargetPos();
-  Vector2I mapSize = GetTiledMap()->getMapSize();
-
-  m_path.push_back(GetTargetPos());
-
-  while (v != GetPosition()) {
-    v -= m_closedList[(v.y*mapSize.x) + v.x]->GetDirection();
-    m_path.push_back(v);
-  }
-
-  m_pPathShape = ge_new<sf::VertexArray>(sf::LineStrip, m_path.size());
-  
-  m_CurrentState = GRID_WALKER_STATE::kDisplaying;
 }

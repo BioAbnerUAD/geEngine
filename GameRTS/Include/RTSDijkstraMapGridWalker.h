@@ -26,9 +26,6 @@ public:
   void
   StepSearch();
 
-  void
-  StepBacktrack();
-
 private:
   struct nodeAndCost
   {

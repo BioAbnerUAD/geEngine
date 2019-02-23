@@ -115,5 +115,8 @@
     <ClInclude Include="Include\RTSAStarMapGridWalker.h">
       <Filter>Source Files\Pathfinding</Filter>
     </ClInclude>
+    <ClInclude Include="Include\RTSExtensions.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

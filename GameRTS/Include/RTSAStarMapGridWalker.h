@@ -26,15 +26,12 @@ public:
   void
   StepSearch();
 
-  void
-  StepBacktrack();
-
 private:
   struct AStarNode
   {
     Vector2I v;
     int8 cost;
-    int32 distance;
+    uint32 distance;
   };
 
   void

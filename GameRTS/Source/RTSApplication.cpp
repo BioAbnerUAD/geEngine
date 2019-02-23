@@ -23,6 +23,7 @@
 #include "RTSConfig.h"
 #include "RTSApplication.h"
 #include "RTSTiledMap.h"
+#include "RTSMapGridWalker.h"
 
 void
 loadMapFromFile(RTSApplication* pApp);
@@ -337,9 +338,21 @@ mainMenu(RTSApplication* pApp) {
 
     ImGui::Checkbox("Move Walker/Target", &GameOptions::s_MoveWalkerOrTarget);
 
-    if (ImGui::Button("Start/Restart Search")) {
-      pApp->getWorld()->StartSearch();
+    int8 walkerState = pApp->getWorld()->getCurrentWalkerState();
+
+    if (walkerState == GRID_WALKER_STATE::kIdle ||
+        walkerState == GRID_WALKER_STATE::kDisplaying) {
+      if (ImGui::Button("Start Search")) {
+        pApp->getWorld()->StartSearch();
+      }
     }
+    else
+    {
+      if (ImGui::Button("Stop Search")) {
+        pApp->getWorld()->StopSearch();
+      }
+    }
+    
   }
   ImGui::End();
 

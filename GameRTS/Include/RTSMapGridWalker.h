@@ -41,8 +41,8 @@ public:
   virtual void
   StepSearch() = 0;
   
-  virtual void
-  StepBacktrack() = 0;
+  void
+  StepBacktrack();
 
   FORCEINLINE Vector2I
   GetPosition() const { 
@@ -87,21 +87,23 @@ protected:
   GetTiledMap() const {
     return m_pTiledMap;
   }
-
   
-  sf::Shape*           m_pShape;
-  sf::VertexArray*     m_pPathShape;
+  sf::Shape*         m_pShape;
+  sf::VertexArray*   m_pPathShape;
 
-  List<Vector2I>       m_openList;
-  Vector<RTSPathNode*> m_closedList;
-  Vector<Vector2I>     m_path;
+  List<Vector2I>            m_openList;
+  ForwardList<RTSPathNode*> m_fastClosedList;
+  Vector<RTSPathNode*>      m_closedList;
+  Vector<Vector2I>          m_path;
 
   GRID_WALKER_STATE::E m_CurrentState;
 
-  /* TODO: enable choosing if diagonal movement is allowed
-  and whether it can cross diagonals that are blocked non diagonaly*/
-  static const Vector2I s_nextDirection4[8];
-  static const Vector2I s_nextDirection8[8];
+  /*
+  Offsets to add to the current node in order to get neighbor nodes
+  TODO: enable choosing if diagonal movement is allowed
+  and whether it can cross diagonals that are blocked non diagonally
+  */
+  static const Vector<Vector2I> s_nextDirection;
 
 private:
 
