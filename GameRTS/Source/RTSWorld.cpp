@@ -25,7 +25,7 @@ RTSWorld::init(sf::RenderTarget* pTarget) {
   GE_ASSERT(nullptr == m_pTiledMap && "World was already initialized");
   destroy();
 
-  Vector2I mapSize = Vector2I(256, 256);
+  Vector2I mapSize = Vector2I(4096, 4096);
   
   m_pTarget = pTarget;
 
@@ -63,11 +63,10 @@ RTSWorld::init(sf::RenderTarget* pTarget) {
 void
 RTSWorld::destroy() {
  //Destroy all the walkers
-  for (SIZE_T i = 0; i < m_walkersList.size(); i++) {
-    ge_delete(m_walkersList[i]);
+  while (m_walkersList.size() > 0) {
+    ge_delete(m_walkersList.back());
+    m_walkersList.pop_back();
   }
-
-  m_walkersList.clear();
 
   //As the last step, destroy the full map
   if (nullptr != m_pTiledMap) {

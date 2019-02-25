@@ -121,7 +121,7 @@ RTSAStarMapGridWalker::PriorityPushBack(const Vector2I& v, float vCost) {
   uint32 tempDistance;
 
   for (auto it = m_openList.begin(); it != m_openList.end(); ++it) {
-    tempDistance = v.manhattanDist(target);
+    tempDistance = it->v.manhattanDist(target);
     if (it->cost + tempDistance > vCost + distance) {
       m_openList.insert(it, { v, vCost });
       return;
