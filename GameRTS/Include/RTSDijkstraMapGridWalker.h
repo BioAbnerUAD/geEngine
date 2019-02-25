@@ -14,12 +14,6 @@ public:
   RTSDijkstraMapGridWalker(RTSTiledMap* m_pTiledMap);
   ~RTSDijkstraMapGridWalker();
 
-  bool
-  init();
-
-  void
-  render(sf::RenderTarget* target);
-
   void 
   StartSeach(bool stepMode);
 
@@ -27,17 +21,8 @@ public:
   StepSearch();
 
 private:
-  struct nodeAndCost
-  {
-    Vector2I v;
-    int8 cost;
-  };
-
   void
-  PriorityPushBack(Vector2I v, int8 vCost);
+  PriorityPushBack(const Vector2I& v, float vCost);
 
   bool m_foundPath = false;
-
-  sf::Shape* m_pTargetShape;
-  List<nodeAndCost> m_openListWithCosts;
 };

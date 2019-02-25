@@ -1,4 +1,4 @@
-//#include <vld.h>
+#include <vld.h>
 #include <iostream>
 
 #if GE_PLATFORM == GE_PLATFORM_WIN32

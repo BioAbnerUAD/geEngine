@@ -23,7 +23,7 @@ public:
 
   RTSPathNode(const Vector2I& position,
               const Vector2I& direction, 
-              int8 cost);
+              float cost);
 
   ~RTSPathNode();
 
@@ -31,7 +31,7 @@ public:
   render(sf::RenderTarget * target, const RTSTiledMap & tileMap);
 
   void
-  SetNewDirAndCost(Vector2I newDir, int8 newCost);
+  SetNewDirAndCost(Vector2I newDir, float newCost);
 
   FORCEINLINE Vector2I 
   GetPosition() const {
@@ -43,7 +43,7 @@ public:
     return m_direction;
   }
 
-  FORCEINLINE int8 
+  FORCEINLINE float 
   GetCost() const {
     return m_cost;
   }
@@ -51,12 +51,12 @@ public:
 private:
   static UPtr<sf::Font>  s_pArialFont;
 
-  sf::Shape*  m_pShape;
-  sf::Shape*  m_pDirShape;
-  sf::Text*   m_pCostText;
+  sf::Shape* m_pShape = nullptr;
+  sf::Shape* m_pDirShape = nullptr;
+  sf::Text*  m_pCostText = nullptr;
 
-  Vector2I    m_position;
-  Vector2I    m_direction;
-  int8        m_cost;
+  Vector2I   m_position;
+  Vector2I   m_direction;
+  float      m_cost;
 };
 

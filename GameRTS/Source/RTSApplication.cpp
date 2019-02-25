@@ -360,7 +360,7 @@ mainMenu(RTSApplication* pApp) {
   {
     ImGui::Text("Terrain Texture");
 
-    for (SIZE_T i = 0; i < TERRAIN_TYPE::kNumObjects; i++) {
+    for (int8 i = 0; i < TERRAIN_TYPE::kNumObjects; i++) {
       ImGui::RadioButton(TERRAIN_TYPE::ES[i].c_str(),
         &GameOptions::s_selectedTerrainIndex,
         static_cast<TERRAIN_TYPE::E> (i));

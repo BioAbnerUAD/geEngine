@@ -11,12 +11,6 @@ class RTSBestFirstSearchMapGridWalker :
 public:
   RTSBestFirstSearchMapGridWalker(RTSTiledMap* tileMap);
   ~RTSBestFirstSearchMapGridWalker();
-  
-  bool
-  init();
-
-  void
-  render(sf::RenderTarget* target);
 
   void 
   StartSeach(bool stepMode);
@@ -27,7 +21,5 @@ public:
 private:
   void
   PriorityPushBack(Vector2I& w);
-
-  sf::Shape* m_pTargetShape;
 };
 

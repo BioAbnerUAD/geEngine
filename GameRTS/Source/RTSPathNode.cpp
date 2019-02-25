@@ -2,6 +2,7 @@
 
 #include <SFML/Graphics/RectangleShape.hpp>
 #include <SFML/Graphics/Text.hpp>
+
 #include "RTSTiledMap.h"
 
 #ifdef MAP_IS_ISOMETRIC
@@ -15,8 +16,9 @@ UPtr<sf::Font> RTSPathNode::s_pArialFont = ge_unique_ptr<sf::Font>(nullptr);
 
 RTSPathNode::RTSPathNode(const Vector2I & position,
                          const Vector2I & direction) :
-  m_position(position), m_direction(direction), 
-  m_cost(-1), m_pCostText(nullptr) {
+  m_position(position), 
+  m_direction(direction), 
+  m_cost(-1) {
 
   m_pShape = ge_new<sf::RectangleShape>(sf::Vector2f(5.f, 5.f));
   m_pShape->setFillColor(sf::Color::Red);
@@ -26,6 +28,7 @@ RTSPathNode::RTSPathNode(const Vector2I & position,
     m_pDirShape = ge_new<sf::RectangleShape>(sf::Vector2f(10.f, 1.f));
     m_pDirShape->setFillColor(sf::Color::Blue);
 
+    //TODO: put this formula on a separate function
 # ifdef MAP_IS_ISOMETRIC
     // project into isometric space
     float sum = static_cast<float>(direction.y + direction.x);
@@ -48,9 +51,8 @@ RTSPathNode::RTSPathNode(const Vector2I & position,
 
 RTSPathNode::RTSPathNode(const Vector2I & position, 
                          const Vector2I & direction, 
-                         int8 cost) :
-  RTSPathNode(position, direction)
-{
+                         float cost) :
+  RTSPathNode(position, direction) {
   m_cost = cost;
 
   if (!s_pArialFont) {
@@ -105,7 +107,7 @@ RTSPathNode::render(sf::RenderTarget* target,
 }
 
 void
-RTSPathNode::SetNewDirAndCost(Vector2I newDir, int8 newCost) {
+RTSPathNode::SetNewDirAndCost(Vector2I newDir, float newCost) {
   m_direction = newDir;
   m_cost = newCost;
 

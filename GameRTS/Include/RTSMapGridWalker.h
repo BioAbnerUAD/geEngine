@@ -23,17 +23,33 @@ namespace GRID_WALKER_STATE {
   };
 }
 
+struct NodeWithCost
+{
+  Vector2I v;
+  float cost;
+
+  FORCEINLINE NodeWithCost(Vector2I v, float cost)
+    : v(v), cost(cost) {}
+
+  FORCEINLINE NodeWithCost(Vector2I v)
+    : v(v), cost(0.f) {}
+
+  bool operator ==(NodeWithCost other) {
+    return (v == other.v) && (cost == other.cost);
+  }
+};
+
 class RTSMapGridWalker
 {
 public:
   RTSMapGridWalker(RTSTiledMap* pTiledMap);
   ~RTSMapGridWalker();
 
-  virtual bool
-  init() = 0;
+  bool
+  init();
 
-  virtual void
-  render(sf::RenderTarget* target) = 0;
+  void
+  render(sf::RenderTarget* target);
 
   virtual void
   StartSeach(bool stepMode) = 0;
@@ -76,8 +92,30 @@ public:
     return m_CurrentState; 
   }
 
+  FORCEINLINE void 
+  SetClosedListRef(SPtr<Vector<RTSPathNode*>> closedList) {
+    m_closedList = closedList; 
+  }
+
   void
   ResetClosedList();
+
+  void
+  RenderClosedList(sf::RenderTarget* target);
+
+  void
+  AddToClosedList(const Vector2I & position,
+                  const Vector2I & direction);
+
+  void
+  AddToClosedList(const Vector2I & position,
+                  const Vector2I & direction,
+                  float cost);
+
+  FORCEINLINE RTSPathNode*
+  GetClosedListNode(int32 index){
+    return (*m_closedList)[index];
+  }
 
   FORCEINLINE void
   Reset();
@@ -87,15 +125,14 @@ protected:
   GetTiledMap() const {
     return m_pTiledMap;
   }
+
+  sf::Shape*        m_pShape;
+  sf::Shape*        m_pTargetShape;
+  sf::VertexArray*  m_pPathShape;
+
+  List<NodeWithCost>         m_openList;
+  Vector<Vector2I>           m_path;
   
-  sf::Shape*         m_pShape;
-  sf::VertexArray*   m_pPathShape;
-
-  List<Vector2I>            m_openList;
-  ForwardList<RTSPathNode*> m_fastClosedList;
-  Vector<RTSPathNode*>      m_closedList;
-  Vector<Vector2I>          m_path;
-
   GRID_WALKER_STATE::E m_CurrentState;
 
   /*
@@ -106,6 +143,8 @@ protected:
   static const Vector<Vector2I> s_nextDirection;
 
 private:
+  SPtr<Vector<RTSPathNode*>> m_closedList;
+  ForwardList<RTSPathNode*>  m_fastClosedList;
 
   RTSTiledMap* m_pTiledMap;
   Vector2I m_position;

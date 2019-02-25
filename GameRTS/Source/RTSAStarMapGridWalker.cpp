@@ -8,94 +8,26 @@
 
 RTSAStarMapGridWalker::
 RTSAStarMapGridWalker(RTSTiledMap * m_pTiledMap) :
-  RTSMapGridWalker(m_pTiledMap), m_pTargetShape(nullptr) {
+  RTSMapGridWalker(m_pTiledMap) {
 
 }
 
-RTSAStarMapGridWalker::~RTSAStarMapGridWalker() {
-  if (nullptr != m_pTargetShape) {
-    ge_delete(m_pTargetShape);
-  }
-}
-
-bool
-RTSAStarMapGridWalker::init() {
-  auto shape = ge_new<sf::RectangleShape>(sf::Vector2f(10.f, 10.f));
-  shape->setFillColor(sf::Color::Red);
-  shape->setOrigin(5, 5);
-
-  m_pShape = shape;
-
-  auto shapeT = ge_new <sf::RectangleShape>(sf::Vector2f(10.f, 10.f));
-  shapeT->setFillColor(sf::Color::Green);
-  shapeT->setOrigin(5, 5);
-
-  m_pShape = shape;
-  m_pTargetShape = shapeT;
-
-  return false;
-}
-
-void
-RTSAStarMapGridWalker::render(sf::RenderTarget * target) {
-  Vector2I screenPos;
-  GetTiledMap()->getMapToScreenCoords(GetPosition().x, GetPosition().y,
-                                      screenPos.x, screenPos.y);
-
-  m_pShape->setPosition(static_cast<float>(screenPos.x + HALFTILESIZE_X),
-                        static_cast<float> (screenPos.y + HALFTILESIZE_Y));
-
-  GetTiledMap()->getMapToScreenCoords(GetTargetPos().x, GetTargetPos().y,
-                                      screenPos.x, screenPos.y);
-
-  m_pTargetShape->setPosition(static_cast<float>(screenPos.x + HALFTILESIZE_X),
-                              static_cast<float> (screenPos.y + HALFTILESIZE_Y));
-
-  target->draw(*m_pShape);
-  target->draw(*m_pTargetShape);
-
-  if (m_CurrentState != GRID_WALKER_STATE::kIdle) {
-    //draw nodes in closed list
-    for (auto it = m_fastClosedList.begin(); it != m_fastClosedList.end(); ++it) {
-      (*it)->render(target, *GetTiledMap());
-    }
-
-    if (nullptr != m_pPathShape) {
-      for (SIZE_T i = 0; i < m_path.size(); ++i) {
-        GetTiledMap()->getMapToScreenCoords(m_path[i].x, m_path[i].y, 
-                                            screenPos.x, screenPos.y);
-
-        (*m_pPathShape)[i].position = sf::Vector2f(
-          static_cast<float>(screenPos.x + HALFTILESIZE_X),
-          static_cast<float>(screenPos.y + HALFTILESIZE_Y)
-        );
-
-        (*m_pPathShape)[i].color = sf::Color::White;
-      }
-
-      target->draw(*m_pPathShape);
-    }
-  }
-}
+RTSAStarMapGridWalker::~RTSAStarMapGridWalker() {}
 
 void
 RTSAStarMapGridWalker::StartSeach(bool stepMode) {
   Vector2I mapSize = GetTiledMap()->getMapSize();
   Vector2I s = GetPosition();
-  int32 sIndex = (s.y * mapSize.x) + s.x;
 
   Reset();
 
   m_CurrentState = GRID_WALKER_STATE::kSearching;
 
-  m_openListAstar.clear();
-
   // enqueue source
-  m_openListAstar.push_back({ s, 0 }); //zero cost cause I'm already here
+  m_openList.push_back({ s, 0 }); //zero cost cause I'm already here
 
   // mark source as visited.
-  m_closedList[sIndex] = ge_new<RTSPathNode>(GetPosition(), Vector2I::ZERO);
-  m_fastClosedList.push_front(m_closedList[sIndex]);
+  AddToClosedList(GetPosition(), Vector2I::ZERO);
 
   if (!stepMode) { //when not in stepMode run entire search all at once
     while (m_CurrentState == GRID_WALKER_STATE::kSearching) {
@@ -115,7 +47,7 @@ or even searching all the map
 void
 RTSAStarMapGridWalker::StepSearch() {
   GE_ASSERT(m_CurrentState == GRID_WALKER_STATE::kSearching);
-  if (m_openListAstar.empty()) {
+  if (m_openList.empty()) {
     m_CurrentState = GRID_WALKER_STATE::kBacktracking;
   }
 
@@ -123,14 +55,14 @@ RTSAStarMapGridWalker::StepSearch() {
   Vector2I target = GetTargetPos();
 
   //Removing that vertex from queue, whose neighbors will be visited now
-  Vector2I v = m_openListAstar.front().v;
-  int8 vCost = m_openListAstar.front().cost;
+  Vector2I v = m_openList.front().v;
+  float vCost = m_openList.front().cost;
 
-  m_openListAstar.pop_front();
+  m_openList.pop_front();
 
   //required variables
   Vector2I w;
-  int8 wCost;
+  float wCost;
   int32 wIndex;
   uint32 distance;
 
@@ -144,8 +76,7 @@ RTSAStarMapGridWalker::StepSearch() {
       wCost = vCost + GetTiledMap()->getCost(w.x, w.y);
 
       //mark w as visited.
-      m_closedList[wIndex] = ge_new<RTSPathNode>(w, s_nextDirection[i], wCost);
-      m_fastClosedList.push_front(m_closedList[wIndex]);
+      AddToClosedList(w, s_nextDirection[i], wCost);
 
       m_CurrentState = GRID_WALKER_STATE::kBacktracking;
       
@@ -157,23 +88,25 @@ RTSAStarMapGridWalker::StepSearch() {
       //make sure it's not an obstacle
       if (TERRAIN_TYPE::kObstacle != GetTiledMap()->getType(w.x, w.y)) {
         // if it isn't marked as visited just push it
-        wCost = vCost + GetTiledMap()->getCost(w.x, w.y);
+        float costMult = (s_nextDirection[i].sizeSquared() > 1) ? 1.5f : 1.f;
+        float tileCost = static_cast<float>(GetTiledMap()->getCost(w.x, w.y));
+
+        wCost = vCost + tileCost * costMult;
+
         distance = v.manhattanDist(target);
 
-        if (nullptr == m_closedList[wIndex]) {
+        if (nullptr == GetClosedListNode(wIndex)) {
           PriorityPushBack(w, wCost); // enqueue w
 
           //mark w as visited.
-          m_closedList[wIndex] =
-                ge_new<RTSPathNode>(w, s_nextDirection[i], wCost);
-
-          m_fastClosedList.push_front(m_closedList[wIndex]);
+          AddToClosedList(w, s_nextDirection[i], wCost);
         }
-        else if (wCost < m_closedList[wIndex]->GetCost()) {
+        // Doesn't take distance into account because it's the same node
+        else if (wCost < GetClosedListNode(wIndex)->GetCost()) {
           PriorityPushBack(w, wCost); // enqueue w again
 
           //update lesser cost for node
-          m_closedList[wIndex]->SetNewDirAndCost(s_nextDirection[i], wCost);
+          GetClosedListNode(wIndex)->SetNewDirAndCost(s_nextDirection[i], wCost);
         }
       }
     }
@@ -182,16 +115,18 @@ RTSAStarMapGridWalker::StepSearch() {
 
 // TODO: Move this to somewhere else and also bestFirstSearch's Priority Push Back
 void 
-RTSAStarMapGridWalker::PriorityPushBack(Vector2I v, int8 vCost) {
+RTSAStarMapGridWalker::PriorityPushBack(const Vector2I& v, float vCost) {
   Vector2I target = GetTargetPos();
   uint32 distance = v.manhattanDist(target);
+  uint32 tempDistance;
 
-  for (auto it = m_openListAstar.begin(); it != m_openListAstar.end(); ++it) {
-    if (it->cost + it->distance > vCost + distance) {
-      m_openListAstar.insert(it, { v, vCost, distance });
+  for (auto it = m_openList.begin(); it != m_openList.end(); ++it) {
+    tempDistance = v.manhattanDist(target);
+    if (it->cost + tempDistance > vCost + distance) {
+      m_openList.insert(it, { v, vCost });
       return;
     }
   }
 
-  m_openListAstar.push_back({v, vCost, distance });
+  m_openList.push_back({v, vCost });
 }

@@ -25,12 +25,14 @@ RTSWorld::init(sf::RenderTarget* pTarget) {
   GE_ASSERT(nullptr == m_pTiledMap && "World was already initialized");
   destroy();
 
+  Vector2I mapSize = Vector2I(256, 256);
+  
   m_pTarget = pTarget;
 
   //Initialize the map (right now it's an empty map)
   m_pTiledMap = ge_new<RTSTiledMap>();
   GE_ASSERT(m_pTiledMap);
-  m_pTiledMap->init(m_pTarget, Vector2I(4096, 4096));
+  m_pTiledMap->init(m_pTarget, mapSize);
 
   //Create the path finding classes and push them to the walker list
   m_walkersList.push_back(ge_new<RTSBreadthFirstSearchMapGridWalker>(m_pTiledMap));
@@ -39,10 +41,14 @@ RTSWorld::init(sf::RenderTarget* pTarget) {
   m_walkersList.push_back(ge_new<RTSDijkstraMapGridWalker>(m_pTiledMap));
   m_walkersList.push_back(ge_new<RTSAStarMapGridWalker>(m_pTiledMap));
 
+  auto closedList = ge_shared_ptr_new<Vector<RTSPathNode*>>();
+  closedList->resize(mapSize.x * mapSize.y, nullptr);
+
   //Init the walker objects
 
   for (SIZE_T it = 0; it < m_walkersList.size(); ++it) {
     m_walkersList[it]->init();
+    m_walkersList[it]->SetClosedListRef(closedList);
   }
 
   //Set the first walker as the active walker
@@ -57,10 +63,11 @@ RTSWorld::init(sf::RenderTarget* pTarget) {
 void
 RTSWorld::destroy() {
  //Destroy all the walkers
-  while (m_walkersList.size() > 0) {
-    ge_delete(m_walkersList.back());
-    m_walkersList.pop_back();
+  for (SIZE_T i = 0; i < m_walkersList.size(); i++) {
+    ge_delete(m_walkersList[i]);
   }
+
+  m_walkersList.clear();
 
   //As the last step, destroy the full map
   if (nullptr != m_pTiledMap) {
