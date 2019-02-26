@@ -8,9 +8,7 @@
 
 RTSAStarMapGridWalker::
 RTSAStarMapGridWalker(RTSTiledMap * m_pTiledMap) :
-  RTSMapGridWalker(m_pTiledMap) {
-
-}
+  RTSMapGridWalker(m_pTiledMap) {}
 
 RTSAStarMapGridWalker::~RTSAStarMapGridWalker() {}
 
@@ -64,7 +62,6 @@ RTSAStarMapGridWalker::StepSearch() {
   Vector2I w;
   float wCost;
   int32 wIndex;
-  uint32 distance;
 
   //processing all the neighbors of v
   for (SIZE_T i = 0; i < s_nextDirection.size(); ++i) {
@@ -92,8 +89,6 @@ RTSAStarMapGridWalker::StepSearch() {
         float tileCost = static_cast<float>(GetTiledMap()->getCost(w.x, w.y));
 
         wCost = vCost + tileCost * costMult;
-
-        distance = v.manhattanDist(target);
 
         if (nullptr == GetClosedListNode(wIndex)) {
           PriorityPushBack(w, wCost); // enqueue w

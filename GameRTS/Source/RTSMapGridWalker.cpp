@@ -37,8 +37,8 @@ RTSMapGridWalker::~RTSMapGridWalker() {
 
 
 bool
-RTSMapGridWalker::init()
-{
+RTSMapGridWalker::init() {
+
   auto shape = ge_new<sf::RectangleShape>(sf::Vector2f(10.f, 10.f));
   shape->setFillColor(sf::Color::Red);
   shape->setOrigin(5, 5);
@@ -56,8 +56,8 @@ RTSMapGridWalker::init()
 }
 
 void
-RTSMapGridWalker::render(sf::RenderTarget * target)
-{
+RTSMapGridWalker::render(sf::RenderTarget * target) {
+
   Vector2I screenPos;
   GetTiledMap()->getMapToScreenCoords(GetPosition().x, GetPosition().y,
                                       screenPos.x, screenPos.y);
