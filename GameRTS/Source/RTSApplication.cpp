@@ -336,7 +336,10 @@ mainMenu(RTSApplication* pApp) {
       ImGui::EndCombo();
     }
 
-    ImGui::Checkbox("Move Walker/Target", &GameOptions::s_MoveWalkerOrTarget);
+    static int32 index = 0;
+    ImGui::RadioButton("Move Walker", &index, 0); ImGui::SameLine();
+    ImGui::RadioButton("Move Target", &index, 1);
+    GameOptions::s_MoveWalkerOrTarget = static_cast<bool>(index);
 
     int8 walkerState = pApp->getWorld()->getCurrentWalkerState();
 

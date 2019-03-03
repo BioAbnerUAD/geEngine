@@ -167,7 +167,7 @@ RTSWorld::queryRightClickEvent() {
     //Make sure that there is no obstacle in this place
     if (TERRAIN_TYPE::kObstacle != m_pTiledMap->getType(mapPos.x, mapPos.y)) {
 
-      if (GameOptions::s_MoveWalkerOrTarget) {
+      if (!GameOptions::s_MoveWalkerOrTarget) {
         // Make sure it's not the same tile where the Target is already at
         if (m_activeWalker->GetTargetPos() != mapPos) {
           //move the 'Active Walker'

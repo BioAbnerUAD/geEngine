@@ -43,6 +43,9 @@ class GameOptions : public Module<GameOptions>
 
   static bool s_GUIBlockingMouse;
 
+  /*
+   * @brief: move walker = false, move target = true
+   */
   static bool s_MoveWalkerOrTarget;
 
   static int8 s_CurrentWalkerIndex;
