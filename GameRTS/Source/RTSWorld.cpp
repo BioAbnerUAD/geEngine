@@ -297,8 +297,11 @@ RTSWorld::paintTiles()   {
 
 void 
 RTSWorld::putUnit() {
-  sf::Vector2i mousePos;
-  Vector2 mapPos;
+  sf::Vector2i mousePos = sf::Mouse::getPosition();
+
+  if (!m_pTiledMap->isScreenCoordInMap(mousePos.x, mousePos.y)) {
+    return;
+  }
 
   if (m_activeWalker->GetState() == GRID_WALKER_STATE::kDisplaying) {
     m_activeWalker->Reset();
@@ -306,8 +309,7 @@ RTSWorld::putUnit() {
 
   if (m_activeWalker->GetState() == GRID_WALKER_STATE::kIdle) {
 
-    mousePos = sf::Mouse::getPosition();
-
+    Vector2 mapPos;
     m_pTiledMap->getRawScreenToMapCoords(mousePos.x, mousePos.y,
                                          mapPos.x, mapPos.y);
 

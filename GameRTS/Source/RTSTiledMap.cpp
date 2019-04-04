@@ -112,6 +112,22 @@ RTSTiledMap::setCameraStartPosition(const int32 x, const int32 y) {
 #endif
 }
 
+bool
+RTSTiledMap::isScreenCoordInMap(const int32 scrX,
+                                const int32 scrY) const {
+
+  int32 mapX = scrX - m_PreCalc_ScreenDeface.x;
+  int32 mapY = scrY - m_PreCalc_ScreenDeface.y;
+
+  #ifdef MAP_IS_ISOMETRIC
+  mapX = (mapX + mapY - HALFTILESIZE_Y);
+  mapY = (mapY - mapX - HALFTILESIZE_X);
+  #endif
+
+  return Math::isWithinInclusive(mapX, 0, TILESIZE_X * m_mapSize.x) &&
+         Math::isWithinInclusive(mapY, 0, TILESIZE_Y * m_mapSize.y);
+}
+
 void
 RTSTiledMap::getScreenToMapCoords(const int32 scrX,
                                   const int32 scrY,

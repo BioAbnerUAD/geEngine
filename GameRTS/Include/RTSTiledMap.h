@@ -158,6 +158,9 @@ class RTSTiledMap
   void
   setCameraStartPosition(const int32 x, const int32 y);
 
+  bool 
+  isScreenCoordInMap(const int32 scrX, const int32 scrY) const;
+
   void
   getCameraStartPosition(int32 &x, int32 &y) const {
     x = m_iCamera.x;
