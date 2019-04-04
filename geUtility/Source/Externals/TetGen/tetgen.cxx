@@ -2780,7 +2780,7 @@ char* tetgenio::readline(char *string, FILE *infile, int *linenumber)
 {
   char *result;
 
-  // Search for a non-empty line.
+  // GetPath for a non-empty line.
   do {
     result = fgets(string, INPUTLINESIZE - 1, infile);
     if (linenumber) (*linenumber)++;
@@ -2837,7 +2837,7 @@ char* tetgenio::readnumberline(char *string,
 {
   char *result;
 
-  // Search for something that looks like a number.
+  // GetPath for something that looks like a number.
   do {
     result = fgets(string, INPUTLINESIZE, infile);
     if (result == (char *) NULL) {
@@ -8657,7 +8657,7 @@ int tetgenmesh::flipnm(triface* abtets, int n, int level, int abedgepivot,
         // Make sure that no inverted tet will be created.
         point searchpt = NULL, chkpt;
         REAL bigvol = 0.0, ori1, ori2;
-        // Search an interior vertex which is an apex of edge [c,d].
+        // GetPath an interior vertex which is an apex of edge [c,d].
         //   In principle, it can be arbitrary interior vertex.  To avoid
         //   numerical issue, we choose the vertex which belongs to a tet
         //   't' at edge [c,d] and 't' has the biggest volume.  
@@ -12110,7 +12110,7 @@ int tetgenmesh::sinsertvertex(point insertpt, face *searchsh, face *splitseg,
       if (searchsh->sh == NULL) {
         *searchsh = recentsh;
       }
-      // Search the vertex. An above point must be provided ('aflag' = 1).
+      // GetPath the vertex. An above point must be provided ('aflag' = 1).
       loc = slocate(insertpt, searchsh, 1, 1, rflag);
     }
   }
@@ -12804,7 +12804,7 @@ int tetgenmesh::sremovevertex(point delpt, face* parentsh, face* parentseg,
         break;
       }
 
-      // Search an edge to flip.
+      // GetPath an edge to flip.
       for (i = 0; i < caveshlist->objects; i++) {
         parysh = (face *) fastlookup(caveshlist, i);
         flipfaces[0] = *parysh;
@@ -13123,7 +13123,7 @@ enum tetgenmesh::interresult tetgenmesh::sscoutsegment(face *searchsh,
   }
   len = distance(startpt, endpt);
 
-  // Search an edge in 'searchsh' on the path of this segment.
+  // GetPath an edge in 'searchsh' on the path of this segment.
   while (1) {
 
     pb = sdest(*searchsh);
@@ -13638,7 +13638,7 @@ void tetgenmesh::unifysegments()
         sface = facperverlist[k];
         // The face may be deleted if it is a duplicated face.
         if (sface.sh[3] == NULL) continue;
-        // Search the edge torg->tdest.
+        // GetPath the edge torg->tdest.
         assert(sorg(sface) == torg); // SELF_CHECK
         if (sdest(sface) != tdest) {
           senext2self(sface);
@@ -13658,7 +13658,7 @@ void tetgenmesh::unifysegments()
           sface1 = facperverlist[k];
           // The face may be deleted if it is a duplicated face.
           if (sface1.sh[3] == NULL) continue;
-          // Search the edge torg->tdest.
+          // GetPath the edge torg->tdest.
           assert(sorg(sface1) == torg); // SELF_CHECK
           if (sdest(sface1) != tdest) {
             senext2self(sface1);
@@ -13710,7 +13710,7 @@ void tetgenmesh::unifysegments()
       sface = facperverlist[k];
       // The face may be deleted if it is a duplicated face.
       if (sface.sh[3] == NULL) continue;
-      // Search the edge torg->tdest.
+      // GetPath the edge torg->tdest.
       assert(sorg(sface) == torg); // SELF_CHECK
       if (sdest(sface) != tdest) {
         senext2self(sface);
@@ -14889,7 +14889,7 @@ enum tetgenmesh::interresult
 
 ///////////////////////////////////////////////////////////////////////////////
 //                                                                           //
-// scoutsegment()    Search an edge in the tetrahedralization.               //
+// scoutsegment()    GetPath an edge in the tetrahedralization.               //
 //                                                                           //
 // If the edge is found, it returns SHAREEDGE, and 'searchtet' returns the   //
 // edge from startpt to endpt.                                               //
@@ -14984,7 +14984,7 @@ enum tetgenmesh::interresult
   }
   reftet = *searchtet; // Save the tet containing the refpt.
 
-  // Search intersecting faces along the segment.
+  // GetPath intersecting faces along the segment.
   while (1) {
 
 
@@ -15218,7 +15218,7 @@ void tetgenmesh::delaunizesegments()
       continue; // Not a missing segment.
     }
 
-    // Search the segment.
+    // GetPath the segment.
     dir = scoutsegment(sorg(sseg), sdest(sseg), &searchtet, &refpt, NULL);
 
     if (dir == SHAREEDGE) {
@@ -15267,7 +15267,7 @@ void tetgenmesh::delaunizesegments()
 
 ///////////////////////////////////////////////////////////////////////////////
 //                                                                           //
-// scoutsubface()    Search subface in the tetrahedralization.               //
+// scoutsubface()    GetPath subface in the tetrahedralization.               //
 //                                                                           //
 // 'searchsh' is searched in T. If it exists, it is 'locked' at the face in  //
 // T. 'searchtet' refers to the face. Otherwise, it is missing.              //
@@ -15293,7 +15293,7 @@ enum tetgenmesh::interresult
 
   // Get a tet whose origin is a.
   point2tetorg(pa, *searchtet);
-  // Search the edge [a,b].
+  // GetPath the edge [a,b].
   dir = finddirection(searchtet, pb);
   if (dir == ACROSSVERT) {
     // Check validity of a PLC.
@@ -15306,7 +15306,7 @@ enum tetgenmesh::interresult
     }
     // The edge exists. Check if the face exists.
     pc = sapex(*searchsh);
-    // Searchtet holds edge [a,b]. Search a face with apex c.
+    // Searchtet holds edge [a,b]. GetPath a face with apex c.
     spintet = *searchtet;
     while (1) {
       if (apex(spintet) == pc) {
@@ -15457,7 +15457,7 @@ void tetgenmesh::formregion(face* missh, arraypool* missingshs,
 
 ///////////////////////////////////////////////////////////////////////////////
 //                                                                           //
-// scoutcrossedge()    Search an edge that crosses the missing region.       //
+// scoutcrossedge()    GetPath an edge that crosses the missing region.       //
 //                                                                           //
 // Return 1 if a crossing edge is found. It is returned by 'crosstet'. More- //
 // over, the edge is oriented such that its origin lies below R.  Return 0   //
@@ -16165,7 +16165,7 @@ bool tetgenmesh::fillcavity(arraypool* topshells, arraypool* botshells,
     pd = org(*crossedge);
     pe = dest(*crossedge);
 
-    // Search the first (middle) face in R. 
+    // GetPath the first (middle) face in R. 
     // Since R may be non-convex, we must make sure that the face is in the
     //   interior of R.  We search a face in 'topnewtets' whose three vertices
     //   are on R and it intersects 'crossedge' in its interior. Then search
@@ -16193,7 +16193,7 @@ bool tetgenmesh::fillcavity(arraypool* topshells, arraypool* botshells,
                   pa = org(toptet);
                   pb = dest(toptet);
                 }
-                // Search the face [b,a,c] in 'botnewtets'.
+                // GetPath the face [b,a,c] in 'botnewtets'.
                 for (j = 0; j < botnewtets->objects; j++) {
                   neightet = * (triface *) fastlookup(botnewtets, j);                  
                   // Is neightet contains 'b'.
@@ -16383,7 +16383,7 @@ bool tetgenmesh::fillcavity(arraypool* topshells, arraypool* botshells,
           tspivot(*midface, newsh);
           spivot(newsh, casout);
           if (casout.sh == NULL) {
-            // Search its neighbor.
+            // GetPath its neighbor.
             fnext(*midface, searchtet);
             while (1) {
               // (1) First check if this side is a bdry edge of R.
@@ -16459,7 +16459,7 @@ bool tetgenmesh::fillcavity(arraypool* topshells, arraypool* botshells,
         pb = dest(toptet);
         pc = org(bottet);
         pd = dest(bottet);
-        // Search an edge in R which is either [a,b] or [c,d].
+        // GetPath an edge in R which is either [a,b] or [c,d].
         // Reminder:  Subfaces in this list 'missingshs', except the first
         //   one, represents an interior edge of R. 
         for (i = 1; i < missingshs->objects; i++) {
@@ -16929,7 +16929,7 @@ void tetgenmesh::flipcertify(triface *chkface,badface **pqueue,point plane_pa,
       *pqueue = parybf;
       parybf->nextitem = NULL;
     } else {
-      // Search an item whose key is larger or equal to current key.
+      // GetPath an item whose key is larger or equal to current key.
       prevbf = NULL;
       nextbf = *pqueue;
       //if (!b->flipinsert_random) { // Default use a priority queue.
@@ -17343,7 +17343,7 @@ bool tetgenmesh::fillregion(arraypool* missingshs, arraypool* missingshbds,
   int i, j;
 
 
-  // Search the first new subface to fill the region.
+  // GetPath the first new subface to fill the region.
   for (i = 0; i < missingshbds->objects; i++) {
     parysh = (face *) fastlookup(missingshbds, i);
     sspivot(*parysh, neighseg);
@@ -17452,7 +17452,7 @@ bool tetgenmesh::fillregion(arraypool* missingshs, arraypool* missingshbds,
     tsspivot1(searchtet, checkseg);
     if (checkseg.sh == NULL) {
       // No segment. It is an interior edge of R. 
-      // Search for a new face in R.
+      // GetPath for a new face in R.
       spintet = searchtet;
       fnextself(spintet); // Skip the current face.
       while (1) {
@@ -17854,7 +17854,7 @@ void tetgenmesh::refineregion(face &splitsh, arraypool *cavpoints,
     sstpivot1(splitseg, searchtet);
     if (searchtet.tet != NULL) continue;
 
-    // Search the segment.
+    // GetPath the segment.
     dir = scoutsegment(sorg(splitseg), sdest(splitseg), &searchtet, &refpt, 
                        NULL);
     if (dir == SHAREEDGE) {
@@ -18667,7 +18667,7 @@ int tetgenmesh::recoveredgebyflips(point startpt, point endpt,
   // The mainloop of the edge reocvery.
   while (1) { // Loop I
 
-    // Search the edge from 'startpt'.
+    // GetPath the edge from 'startpt'.
     point2tetorg(startpt, *searchtet);
     dir = finddirection(searchtet, endpt);
     if (dir == ACROSSVERT) {
@@ -18924,7 +18924,7 @@ int tetgenmesh::add_steinerpt_in_schoenhardtpoly(triface *abtets, int n,
   int N = 100;
   REAL stepi = 0.01;
 
-  // Search the point along the edge [c,d].
+  // GetPath the point along the edge [c,d].
   for (i = 0; i < 3; i++) vcd[i] = pd[i] - pc[i];
 
   // Sample N points in edge [c,d].
@@ -19020,7 +19020,7 @@ int tetgenmesh::add_steinerpt_in_schoenhardtpoly(triface *abtets, int n,
   ivf.chkencflag = chkencflag;
   ivf.assignmeshsize = b->metric; 
   if (ivf.assignmeshsize) {
-    // Search the tet containing 'steinerpt' for size interpolation.
+    // GetPath the tet containing 'steinerpt' for size interpolation.
     locate(steinerpt, &(abtets[0]));
     worktet = abtets[0];
   }
@@ -19568,7 +19568,7 @@ int tetgenmesh::recoverfacebyflips(point pa, point pb, point pc,
       dir = finddirection(searchtet, fc.fac[(i+1)%3]);
       //assert(dir == ACROSSVERT);
       assert(dest(*searchtet) == fc.fac[(i+1)%3]);
-      // Search the face [a,b,c]
+      // GetPath the face [a,b,c]
       spintet = *searchtet;
       while (1) {
         if (apex(spintet) == fc.fac[(i+2)%3]) {
@@ -20148,13 +20148,13 @@ int tetgenmesh::getedge(point e1, point e2, triface *tedge)
     }
   }
 
-  // Search for the edge [e1, e2].
+  // GetPath for the edge [e1, e2].
   point2tetorg(e1, *tedge);
   finddirection(tedge, e2);
   if (dest(*tedge) == e2) {
     return 1;
   } else {
-    // Search for the edge [e2, e1].
+    // GetPath for the edge [e2, e1].
     point2tetorg(e2, *tedge);
     finddirection(tedge, e1);
     if (dest(*tedge) == e1) {
@@ -20172,7 +20172,7 @@ int tetgenmesh::getedge(point e1, point e2, triface *tedge)
   assert(cavebdrylist->objects == 0l); // It will re-use this list.
   arraypool *tetlist = cavebdrylist;
 
-  // Search e2.
+  // GetPath e2.
   for (i = 0; i < 3; i++) {
     pt = apex(searchtet);
     if (pt == e2) {
@@ -20971,7 +20971,7 @@ int tetgenmesh::suppressbdrysteinerpoint(point steinerpt)
   point *newsteiners = new point[n];
   for (i = 0; i < n; i++) newsteiners[i] = NULL;
 
-  // Search for each sector an interior vertex. 
+  // GetPath for each sector an interior vertex. 
   for (i = 0; i < cavesegshlist->objects; i++) {
     parysh = (face *) fastlookup(cavesegshlist, i);
     stpivot(*parysh, searchtet);
@@ -21006,7 +21006,7 @@ int tetgenmesh::suppressbdrysteinerpoint(point steinerpt)
       v1[1] = 0.5 * (v1[1] + v2[1]);
       v1[2] = 0.5 * (v1[2] + v2[2]);
     }
-    // Search the intersection of the ray starting from 'steinerpt' to
+    // GetPath the intersection of the ray starting from 'steinerpt' to
     //   the search direction 'v1' and the shell of the half-ball.
     // - Construct an endpoint.
     len = distance(pa, pb);
@@ -21043,7 +21043,7 @@ int tetgenmesh::suppressbdrysteinerpoint(point steinerpt)
       cavetetlist->newindex((void **) &parytet);
       *parytet = neightet;
     }
-    // Search a best point inside the segment [startpt, steinerpt].
+    // GetPath a best point inside the segment [startpt, steinerpt].
     it = 0;
     samplesize = 100;
     v1[0] = steinerpt[0] - startpt[0];
@@ -21287,7 +21287,7 @@ int tetgenmesh::suppressbdrysteinerpoint(point steinerpt)
               esymself(neightet);
               assert(neightet.tet[neightet.ver & 3] == NULL);          
             } else {
-              // Search for an open face at this edge.
+              // GetPath for an open face at this edge.
               spintet = neightet;
               while (1) {
                 esym(spintet, searchtet);
@@ -21307,7 +21307,7 @@ int tetgenmesh::suppressbdrysteinerpoint(point steinerpt)
             if (org(neightet) != sdest(newsh)) esymself(neightet);
             assert((org(neightet) == sdest(newsh)) &&
                    (dest(neightet) == sorg(newsh)));
-            // Search for an open face at this edge.
+            // GetPath for an open face at this edge.
             spintet = neightet;
             while (1) {
               esym(spintet, searchtet);
@@ -21958,7 +21958,7 @@ void tetgenmesh::carveholes()
   if (in->numberofholes > 0) {
     // Mark as infected any tets inside volume holes.
     for (i = 0; i < 3 * in->numberofholes; i += 3) {
-      // Search a tet containing the i-th hole point.
+      // GetPath a tet containing the i-th hole point.
       neightet.tet = NULL;
       randomsample(&(in->holelist[i]), &neightet);
       if (locate(&(in->holelist[i]), &neightet) != OUTSIDE) {
@@ -22017,7 +22017,7 @@ void tetgenmesh::carveholes()
     regiontets = new triface[in->numberofregions];
     // Mark as marktested any tetrahedra inside volume regions.
     for (i = 0; i < 5 * in->numberofregions; i += 5) {
-      // Search a tet containing the i-th region point.
+      // GetPath a tet containing the i-th region point.
       neightet.tet = NULL;
       randomsample(&(in->regionlist[i]), &neightet);
       if (locate(&(in->regionlist[i]), &neightet) != OUTSIDE) {
@@ -22724,7 +22724,7 @@ void tetgenmesh::reconstructmesh()
         for (j = 0; j < 3; j++) {
           p[j] = idx2verlist[in->trifacelist[idx++]];
         }
-        // Search the subface.
+        // GetPath the subface.
         bondflag = 0;
         // Make sure all vertices are in the mesh. Avoid crash.
         for (j = 0; j < 3; j++) {
@@ -22891,7 +22891,7 @@ void tetgenmesh::reconstructmesh()
           decode(point2tet(p[j]), checktet);
           if (checktet.tet == NULL) break;
         }
-        // Search the segment.
+        // GetPath the segment.
         if ((j == 2) && getedge(p[0], p[1], &checktet)) {
           // Create a new subface.
           makeshellface(subsegs, &segloop);
@@ -23092,7 +23092,7 @@ void tetgenmesh::reconstructmesh()
         e1 = (int) in->segmentconstraintlist[i * 3];
         e2 = (int) in->segmentconstraintlist[i * 3 + 1];
         len = in->segmentconstraintlist[i * 3 + 2];
-        // Search for edge [e1, e2].
+        // GetPath for edge [e1, e2].
         idx = e1 - in->firstnumber;
         for (j = idx2seglist[idx]; j <  idx2seglist[idx + 1]; j++) {
           parentseg = segperverlist[j];
@@ -23119,7 +23119,7 @@ void tetgenmesh::reconstructmesh()
 
 ///////////////////////////////////////////////////////////////////////////////
 //                                                                           //
-// scoutpoint()    Search a point in mesh.                                   //
+// scoutpoint()    GetPath a point in mesh.                                   //
 //                                                                           //
 // This function searches the point in a mesh whose domain may be not convex.//
 // In case of a convex domain, the locate() function is sufficient.          //
@@ -23394,7 +23394,7 @@ void tetgenmesh::interpolatemeshsize()
   points->traversalinit();
   ploop = pointtraverse();
   while (ploop != NULL) {
-    // Search a tet in bgm which containing this point.
+    // GetPath a tet in bgm which containing this point.
     searchtet.tet = NULL;
     iloc = bgm->scoutpoint(ploop, &searchtet, 1); // randflag = 1
     if (iloc != (int) OUTSIDE) {
@@ -24742,7 +24742,7 @@ int tetgenmesh::splitsubface(face *splitfac, point encpt, point encpt1,
     }
   } // if (useinsertradius)
 
-  // Search a subface which contains 'newpt'.
+  // GetPath a subface which contains 'newpt'.
   searchsh = *splitfac;
   // Calculate an above point. It lies above the plane containing
   //   the subface [a,b,c], and save it in dummypoint. Moreover,
@@ -26433,7 +26433,7 @@ long tetgenmesh::improvequalitybysmoothing(optparameters *opm)
             for (i = 0; (i < 4) && !smtflag; i++) {
               if (pointtype(ppt[i]) == FREEVOLVERTEX) {
                 getvertexstar(1, ppt[i], cavetetlist, NULL, NULL);
-                opm->searchstep = 0.001; // Search step size
+                opm->searchstep = 0.001; // GetPath step size
                 smtflag = smoothpoint(ppt[i], cavetetlist, 1, opm);
                 if (smtflag) {
                   while (opm->smthiter == opm->maxiter) {

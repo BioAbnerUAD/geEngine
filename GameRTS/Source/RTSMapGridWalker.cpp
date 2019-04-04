@@ -4,82 +4,52 @@
 #include "RTSPathNode.h"
 
 RTSMapGridWalker::RTSMapGridWalker(RTSTiledMap * pTiledMap) :
-  m_pTiledMap(pTiledMap), 
-  m_pShape(nullptr),
-  m_pTargetShape(nullptr),
+  m_pTiledMap(pTiledMap),
   m_pPathShape(nullptr),
   m_position(Vector2I::ZERO), 
   m_targetPos(Vector2I::ZERO) {
-  
-  Vector2I mapSize = pTiledMap->getMapSize();
 }
 
 RTSMapGridWalker::~RTSMapGridWalker() {
-  if (nullptr != m_pShape) {
-    ge_delete(m_pShape);
-  }
-  if (nullptr != m_pTargetShape) {
-    ge_delete(m_pTargetShape);
-  }
-  if (nullptr != m_pPathShape) {
+  if (m_pPathShape) {
     ge_delete(m_pPathShape);
   }
   if (m_closedList) {
     for (auto it = m_fastClosedList.begin(); it != m_fastClosedList.end(); ++it) {
       Vector2I pos = (*it)->GetPosition();
       int32 index = (pos.y * GetTiledMap()->getMapSize().x) + pos.x;
-      ge_delete((*m_closedList)[index]);
+      if ((*m_closedList)[index]) {
+        ge_delete((*m_closedList)[index]);
+      }
     }
     m_closedList.reset();
   }
 }
 
-
-
 bool
 RTSMapGridWalker::init() {
-
-  auto shape = ge_new<sf::RectangleShape>(sf::Vector2f(10.f, 10.f));
-  shape->setFillColor(sf::Color::Red);
-  shape->setOrigin(5, 5);
-
-  m_pShape = shape;
-
-  auto shapeT = ge_new <sf::RectangleShape>(sf::Vector2f(10.f, 10.f));
-  shapeT->setFillColor(sf::Color::Green);
-  shapeT->setOrigin(5, 5);
-
-  m_pShape = shape;
-  m_pTargetShape = shapeT;
-
-  return false;
+  Reset();
+  m_pPathShape = ge_new<sf::VertexArray>(sf::LineStrip);
+  return true; // TODO: This might need some error checking here
 }
 
 void
 RTSMapGridWalker::render(sf::RenderTarget * target) {
 
-  Vector2I screenPos;
-  GetTiledMap()->getMapToScreenCoords(GetPosition().x, GetPosition().y,
-                                      screenPos.x, screenPos.y);
+  if (GameOptions::s_drawGridWalkerGizmos && 
+      m_CurrentState != GRID_WALKER_STATE::kIdle) {
 
-  m_pShape->setPosition(static_cast<float>(screenPos.x + HALFTILESIZE_X),
-                        static_cast<float> (screenPos.y + HALFTILESIZE_Y));
+    Vector2I screenPos;
 
-  GetTiledMap()->getMapToScreenCoords(GetTargetPos().x, GetTargetPos().y,
-                                      screenPos.x, screenPos.y);
-
-  m_pTargetShape->setPosition(static_cast<float>(screenPos.x + HALFTILESIZE_X),
-                              static_cast<float> (screenPos.y + HALFTILESIZE_Y));
-
-  target->draw(*m_pShape);
-  target->draw(*m_pTargetShape);
-
-  if (m_CurrentState != GRID_WALKER_STATE::kIdle) {
     RenderClosedList(target);
 
-    if (nullptr != m_pPathShape) {
-      for (SIZE_T i = 0; i < m_path.size(); ++i) {
-        GetTiledMap()->getMapToScreenCoords(m_path[i].x, m_path[i].y, 
+    if (m_pPathOutput) {
+
+      m_pPathShape->resize(m_pPathOutput->size());
+
+      for (SIZE_T i = 0; i < m_pPathOutput->size(); ++i) {
+        GetTiledMap()->getMapToScreenCoords((*m_pPathOutput)[i].x, 
+                                            (*m_pPathOutput)[i].y,
                                             screenPos.x, screenPos.y);
 
         (*m_pPathShape)[i].position = sf::Vector2f(
@@ -95,23 +65,23 @@ RTSMapGridWalker::render(sf::RenderTarget * target) {
   }
 }
 
-void 
-RTSMapGridWalker::StepBacktrack() {
-  GE_ASSERT(m_CurrentState == GRID_WALKER_STATE::kBacktracking);
+Vector<Vector2I>
+RTSMapGridWalker::Backtrack() {
+  Vector<Vector2I> path(0);
 
-  Vector2I v = GetTargetPos();
+  Vector2I v = m_targetPos;
   Vector2I mapSize = GetTiledMap()->getMapSize();
 
-  m_path.push_back(GetTargetPos());
+  path.push_back(m_targetPos);
 
-  while (v != GetPosition()) {
+  while (v != m_position) {
     v -= (*m_closedList)[(v.y*mapSize.x) + v.x]->GetDirection();
-    m_path.push_back(v);
+    path.push_back(v);
   }
 
-  m_pPathShape = ge_new<sf::VertexArray>(sf::LineStrip, m_path.size());
-
   m_CurrentState = GRID_WALKER_STATE::kDisplaying;
+
+  return path;
 }
 
 void 
@@ -121,8 +91,10 @@ RTSMapGridWalker::ResetClosedList(){
   for (auto it = m_fastClosedList.begin(); it != m_fastClosedList.end(); ++it) {
     Vector2I pos = (*it)->GetPosition();
     int32 index = (pos.y * mapSize.x) + pos.x;
-    ge_delete((*m_closedList)[index]);
-    (*m_closedList)[index] = nullptr;
+    if ((*m_closedList)[index]) {
+      ge_delete((*m_closedList)[index]);
+      (*m_closedList)[index] = nullptr;
+    }
   }
 
   m_fastClosedList.clear();

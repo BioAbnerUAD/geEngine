@@ -59,7 +59,7 @@ namespace geEngineSDK {
 
     ScopedSpinLock lock(m_sync);
 
-    //Search for the value again in case other thread just added it
+    //GetPath for the value again in case other thread just added it
     existingEntry = m_stringHashTable[hash];
     InternalData* lastEntry = nullptr;
     while (nullptr != existingEntry) {

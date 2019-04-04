@@ -8,44 +8,38 @@
 
 RTSDijkstraMapGridWalker::
 RTSDijkstraMapGridWalker(RTSTiledMap * m_pTiledMap) :
-  RTSMapGridWalker(m_pTiledMap) {
-
-}
+  RTSMapGridWalker(m_pTiledMap) {}
 
 RTSDijkstraMapGridWalker::~RTSDijkstraMapGridWalker() {}
 
 void
-RTSDijkstraMapGridWalker::StartSeach(bool stepMode) {
-  Vector2I mapSize = GetTiledMap()->getMapSize();
-  Vector2I s = GetPosition();
+RTSDijkstraMapGridWalker::GetPath(const Vector2I& pos,
+                                  const Vector2I& target,
+                                  Vector<Vector2I>* path,
+                                  bool stepMode /*= false*/) {
+  m_position = pos;
+  m_targetPos = target;
 
   Reset();
   m_foundPath = false;
 
   m_CurrentState = GRID_WALKER_STATE::kSearching;
 
-  m_openList.clear();
-
   // enqueue source
-  m_openList.push_back({ s, 0 }); //zero cost cause I'm already here
+  m_openList.push_back({ m_position, 0 }); //zero cost cause I'm already here
 
   // mark source as visited.
-  AddToClosedList(GetPosition(), Vector2I::ZERO);
+  AddToClosedList(m_position, Vector2I::ZERO);
+
+  m_pPathOutput = path;
 
   if (!stepMode) { //when not in stepMode run entire search all at once
+
     while (m_CurrentState == GRID_WALKER_STATE::kSearching) {
       StepSearch();
     }
-    while (m_CurrentState == GRID_WALKER_STATE::kBacktracking) {
-      StepBacktrack();
-    }
   }
 }
-
-/*
-TODO: Dijkstra should stop if it finds first path, if it goes a certain amount of steps,
-or even searching all the map
-*/
 
 void
 RTSDijkstraMapGridWalker::StepSearch() {
@@ -53,11 +47,11 @@ RTSDijkstraMapGridWalker::StepSearch() {
   Vector2I mapSize = GetTiledMap()->getMapSize();
 
   if (m_foundPath) {
-    Vector2I t = GetTargetPos();
+    Vector2I t = m_targetPos;
     float targetCost = GetClosedListNode((t.y*mapSize.x) + t.x)->GetCost();
     if (targetCost <= m_openList.front().cost)
     {
-      m_CurrentState = GRID_WALKER_STATE::kBacktracking;
+      *m_pPathOutput = Backtrack();
     }
   }
   else if (m_openList.empty()) {
@@ -71,16 +65,26 @@ RTSDijkstraMapGridWalker::StepSearch() {
 
   m_openList.pop_front();
 
-  //processing all the neighbors of v
+  //required variables
   Vector2I w;
+  int32 wIndex;
   float wCost;
 
+  //processing all the neighbors of v
   for (SIZE_T i = 0; i < s_nextDirection.size(); ++i) {
     w = v + s_nextDirection[i];
-    int32 wIndex = (w.y*mapSize.x) + w.x;
+    wIndex = (w.y*mapSize.x) + w.x;
+
+    //make sure it's a valid neighbor
+    if (w.x < 0 || w.x >= mapSize.x || w.y < 0 || w.y >= mapSize.y ||
+        //if diagonal make sure it has a valid diagonal connection
+        TERRAIN_TYPE::kObstacle == GetTiledMap()->getType(v.x, w.y) ||
+        TERRAIN_TYPE::kObstacle == GetTiledMap()->getType(w.x, v.y)) {
+      continue;
+    }
 
     //if neighbor is target then a path has been found
-    if (GetTargetPos() == w) {
+    if (m_targetPos == w) {
       wCost = vCost + GetTiledMap()->getCost(w.x, w.y);
 
       if (!m_foundPath) {
@@ -96,32 +100,29 @@ RTSDijkstraMapGridWalker::StepSearch() {
       return;
     }
 
-    //make sure it's a valid neighbor
-    if (w.x >= 0 && w.x < mapSize.x && w.y >= 0 && w.y < mapSize.y) {
-      //make sure it's not an obstacle
-      if (TERRAIN_TYPE::kObstacle != GetTiledMap()->getType(w.x, w.y)) {
-        // if it isn't marked as visited just push it
+    //make sure it's not an obstacle
+    if (TERRAIN_TYPE::kObstacle != GetTiledMap()->getType(w.x, w.y)) {
 
-        float costMult = (s_nextDirection[i].sizeSquared() > 1) ? 1.5f : 1.f;
-        float tileCost = static_cast<float>(GetTiledMap()->getCost(w.x, w.y));
+      // if it isn't marked as visited just push it
+      float costMult = (s_nextDirection[i].sizeSquared() > 1) ? 1.5f : 1.f;
+      float tileCost = static_cast<float>(GetTiledMap()->getCost(w.x, w.y));
 
-        wCost = vCost + tileCost * costMult;
+      wCost = vCost + tileCost * costMult;
 
-        if (nullptr == GetClosedListNode(wIndex)) {
-          PriorityPushBack(w, wCost); // enqueue w
+      if (nullptr == GetClosedListNode(wIndex)) {
+        PriorityPushBack(w, wCost); // enqueue w
 
-          //mark w as visited.
-          AddToClosedList(w, s_nextDirection[i], wCost);
-        }
-        else if (wCost < GetClosedListNode(wIndex)->GetCost()) {
-          PriorityPushBack(w, wCost); // enqueue w again
+        //mark w as visited.
+        AddToClosedList(w, s_nextDirection[i], wCost);
+      }
+      // Doesn't take distance into account because it's the same node
+      else if (wCost < GetClosedListNode(wIndex)->GetCost()) {
+        PriorityPushBack(w, wCost); // enqueue w again
 
-          //update lesser cost for node
-          GetClosedListNode(wIndex)->SetNewDirAndCost(s_nextDirection[i], wCost);
-        }
+        //update lesser cost for node
+        GetClosedListNode(wIndex)->SetNewDirAndCost(s_nextDirection[i], wCost);
       }
     }
-
   }
 }
 

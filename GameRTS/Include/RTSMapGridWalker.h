@@ -6,7 +6,6 @@
 using namespace geEngineSDK;
 
 namespace sf{
-  class Shape;
   class RenderTarget;
   class VertexArray;
 }
@@ -18,7 +17,6 @@ namespace GRID_WALKER_STATE {
   enum E {
     kIdle = 0,
     kSearching,
-    kBacktracking,
     kDisplaying
   };
 }
@@ -45,47 +43,20 @@ public:
   RTSMapGridWalker(RTSTiledMap* pTiledMap);
   ~RTSMapGridWalker();
 
-  bool
+  bool 
   init();
 
   void
   render(sf::RenderTarget* target);
 
   virtual void
-  StartSeach(bool stepMode) = 0;
+  GetPath(const Vector2I& pos, 
+          const Vector2I& target, 
+          Vector<Vector2I>* path, 
+          bool stepMode = false) = 0;
 
   virtual void
   StepSearch() = 0;
-  
-  void
-  StepBacktrack();
-
-  FORCEINLINE Vector2I
-  GetPosition() const { 
-    return m_position; 
-  }
-
-  FORCEINLINE void
-  SetPosition(Vector2I position) {
-    m_position = position;
-    Reset();
-  }
-
-  FORCEINLINE Vector2I
-  GetTargetPos() const { 
-    return m_targetPos;
-  }
-
-  FORCEINLINE void
-  SetTargetPos(Vector2I position) {
-    m_targetPos = position;
-    Reset();
-  }
-
-  FORCEINLINE const sf::Shape*
-  GetShape() const { 
-    return m_pShape; 
-  }
 
   FORCEINLINE GRID_WALKER_STATE::E
   GetState() const { 
@@ -96,6 +67,18 @@ public:
   SetClosedListRef(SPtr<Vector<RTSPathNode*>> closedList) {
     m_closedList = closedList; 
   }
+
+  FORCEINLINE void
+  Reset();
+
+protected:
+  FORCEINLINE RTSPathNode*
+  GetClosedListNode(int32 index) {
+    return (*m_closedList)[index];
+  }
+
+  Vector<Vector2I>
+  Backtrack();
 
   void
   ResetClosedList();
@@ -112,26 +95,15 @@ public:
                   const Vector2I & direction,
                   float cost);
 
-  FORCEINLINE RTSPathNode*
-  GetClosedListNode(int32 index){
-    return (*m_closedList)[index];
-  }
-
-  FORCEINLINE void
-  Reset();
-
-protected:
   FORCEINLINE const RTSTiledMap*
   GetTiledMap() const {
     return m_pTiledMap;
   }
 
-  sf::Shape*        m_pShape;
-  sf::Shape*        m_pTargetShape;
   sf::VertexArray*  m_pPathShape;
 
-  List<NodeWithCost>         m_openList;
-  Vector<Vector2I>           m_path;
+  List<NodeWithCost>   m_openList;
+  Vector<Vector2I>*    m_pPathOutput;
   
   GRID_WALKER_STATE::E m_CurrentState;
 
@@ -142,7 +114,6 @@ protected:
   */
   static const Vector<Vector2I> s_nextDirection;
 
-private:
   SPtr<Vector<RTSPathNode*>> m_closedList;
   ForwardList<RTSPathNode*>  m_fastClosedList;
 
@@ -156,11 +127,5 @@ RTSMapGridWalker::Reset()
 {
   m_CurrentState = GRID_WALKER_STATE::kIdle;
   ResetClosedList();
-  m_path.clear();
   m_openList.clear();
-
-  if (m_pPathShape) {
-    ge_delete(m_pPathShape);
-    m_pPathShape = nullptr;
-  }
 }

@@ -4,6 +4,9 @@
 #include <Externals/json.hpp>
 #include "RTSUnitType.h"
 
+#include "RTSWorld.h"
+#include "RTSTiledMap.h"
+
 using namespace geEngineSDK;
 using nlohmann::json;
 
@@ -59,7 +62,7 @@ namespace RTSGame {
     m_id = idUnitType;
 
     for (auto& unit : unitsMap) {
-      if (idUnitType == unit.second.id) {
+      if (1 == unit.second.id) {
         m_name = unit.first;
         m_animationFrames.resize(unit.second.animation.size());
 
@@ -100,5 +103,57 @@ namespace RTSGame {
     //Load the texture for this unit type
     m_pTarget = pTarget;
     m_texture.loadFromFile(pTarget, filePath.toString() + "units.png");
+  }
+
+  int32
+  RTSUnitType::GetAnimIndex(ANIMATIONS::E activeAnim) const {
+    for (int32 i = 0; i < m_animationFrames.size(); ++i) {
+    	if (m_animationFrames[i].name == ANIMATIONS::Name[activeAnim]) {
+        return i;
+    	}
+    }
+    return -1;
+  }
+
+  float
+  RTSUnitType::GetAnimDuration(ANIMATIONS::E activeAnim) const {
+    return m_animationFrames[GetAnimIndex(activeAnim)].duration;
+  }
+
+  void 
+  RTSUnitType::Render(ANIMATIONS::E activeAnim, 
+                      DIRECTIONS::E direction, 
+                      const Vector2 & position, 
+                      float m_animTime) {
+    Vector2 screenPos;
+    Vector2I iScreenPos, iPosition(Math::round(position.x), Math::round(position.y));
+    Vector2I mapSize = RTSWorld::instance().getTiledMap()->getMapSize();
+
+    iPosition.x = Math::clamp(iPosition.x, 0, mapSize.x - 1);
+    iPosition.y = Math::clamp(iPosition.y, 0, mapSize.y - 1);
+
+    RTSWorld::instance().getTiledMap()->getMapToScreenCoords(iPosition.x,
+                                                             iPosition.y,
+                                                             iScreenPos.x,
+                                                             iScreenPos.y);
+
+    screenPos.x = iScreenPos.x + (position.x - iPosition.x) * TILESIZE_X;
+    screenPos.y = iScreenPos.y + (position.y - iPosition.y) * TILESIZE_Y;
+
+    int32 animIndex = GetAnimIndex(activeAnim);
+
+    int32 numFrame = Math::floor(m_animTime / m_animationFrames[animIndex].duration
+                                 * m_animationFrames[animIndex].numFrames);
+
+    if (numFrame < m_animationFrames[animIndex].numFrames) {
+      auto frame = m_animationFrames[animIndex].frames[direction][numFrame];
+
+      m_texture.setPosition(screenPos.x + HALFTILESIZE_X, screenPos.y + HALFTILESIZE_Y);
+      m_texture.setSrcRect(frame.x, frame.y, frame.w, frame.h);
+      m_texture.setOrigin(frame.w / 2, frame.h);
+      m_texture.setScale(frame.bSwap ? -1.f : 1.f, 1.f);
+
+      m_texture.draw();
+    }
   }
 }

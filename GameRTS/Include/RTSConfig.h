@@ -1,7 +1,7 @@
 #pragma once
 
 //Define only if the map should be isometric
-#define MAP_IS_ISOMETRIC
+//#define MAP_IS_ISOMETRIC
 
 #ifdef MAP_IS_ISOMETRIC
 //Tiles pixel size
@@ -23,6 +23,17 @@
 
 using namespace geEngineSDK;
 
+namespace RTSTools
+{
+  enum E
+  {
+    kTerrain = 0,
+    kPlaceUnit,
+    kMoveUnit,
+    kNumTools
+  };
+}
+
 class GameOptions : public Module<GameOptions>
 {
  public:
@@ -43,18 +54,19 @@ class GameOptions : public Module<GameOptions>
 
   static bool s_GUIBlockingMouse;
 
-  /*
-   * @brief: move walker = false, move target = true
-   */
-  static bool s_MoveWalkerOrTarget;
-
   static int8 s_CurrentWalkerIndex;
+
+  static bool s_gridWalkerStepMode;
 
   static const vector< ANSICHAR*> s_pathfinderNames;
 
   static int32 s_selectedTerrainIndex;
 
+  static int32 s_unitTypeIndex;
+
   static int32 s_brushSize;
+  static int32 activeTool;
+  static bool s_drawGridWalkerGizmos;
 };
 
 GameOptions&

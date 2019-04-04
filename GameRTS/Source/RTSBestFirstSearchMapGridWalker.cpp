@@ -9,34 +9,34 @@
 
 RTSBestFirstSearchMapGridWalker::
 RTSBestFirstSearchMapGridWalker(RTSTiledMap * pTiledMap) :
-  RTSMapGridWalker(pTiledMap) {
-
-}
+  RTSMapGridWalker(pTiledMap) {}
 
 RTSBestFirstSearchMapGridWalker::~RTSBestFirstSearchMapGridWalker() {}
 
 void
-RTSBestFirstSearchMapGridWalker::StartSeach(bool stepMode) {
-  Vector2I mapSize = GetTiledMap()->getMapSize();
-  Vector2I s = GetPosition();
+RTSBestFirstSearchMapGridWalker::GetPath(const Vector2I& pos,
+                                         const Vector2I& target,
+                                         Vector<Vector2I>* path,
+                                         bool stepMode /*= false*/) {
+  m_position = pos;
+  m_targetPos = target;
 
   Reset();
 
   m_CurrentState = GRID_WALKER_STATE::kSearching;
 
   m_openList.clear();
-  m_openList.push_back(s); // enqueue source
+  m_openList.push_back(m_position); // enqueue source
 
   // mark source as visited.
-  AddToClosedList(GetPosition(), Vector2I::ZERO);
+  AddToClosedList(m_position, Vector2I::ZERO);
 
-  if (!stepMode) { // when not in stepMode run entire search all at once
-    while (!m_openList.empty() && 
-           m_CurrentState == GRID_WALKER_STATE::kSearching) {
+  m_pPathOutput = path;
+
+  if (!stepMode) { //when not in stepMode run entire search all at once
+
+    while (m_CurrentState == GRID_WALKER_STATE::kSearching) {
       StepSearch();
-    }
-    while (m_CurrentState == GRID_WALKER_STATE::kBacktracking) {
-      StepBacktrack();
     }
   }
 }
@@ -56,38 +56,41 @@ RTSBestFirstSearchMapGridWalker::StepSearch() {
   Vector2I v = m_openList.front().v;
   m_openList.pop_front();
 
-  //processing all the neighbors of v
+  //required variables
   Vector2I w;
   int32 wIndex;
 
+  //processing all the neighbors of v
   for (SIZE_T i = 0; i < s_nextDirection.size(); ++i) {
     w = v + s_nextDirection[i];
     wIndex = (w.y*mapSize.x) + w.x;
+
+    //make sure it's a valid neighbor
+    if (w.x < 0 || w.x >= mapSize.x || w.y < 0 || w.y >= mapSize.y ||
+        //if diagonal make sure it has a valid diagonal connection
+        TERRAIN_TYPE::kObstacle == GetTiledMap()->getType(v.x, w.y) ||
+        TERRAIN_TYPE::kObstacle == GetTiledMap()->getType(w.x, v.y)) {
+      continue;
+    }
+
     //if neighbor is target then a path has been found
-    if (GetTargetPos() == w) {
+    if (m_targetPos == w) {
       
       //mark w as visited.
       AddToClosedList(w, s_nextDirection[i]);
       
-      m_CurrentState = GRID_WALKER_STATE::kBacktracking;
+      *m_pPathOutput = Backtrack();
       return;
     }
 
-    //make sure it's a valid neighbor
-    if (w.x >= 0 && w.x < mapSize.x && w.y >= 0 && w.y < mapSize.y) {
-      //make sure it's not an obstacle and it isn't marked as visited
-      if (TERRAIN_TYPE::kObstacle != GetTiledMap()->getType(w.x, w.y) &&
-        nullptr == GetClosedListNode(wIndex)) {
+    //make sure it's not an obstacle and it isn't marked as visited
+    if (TERRAIN_TYPE::kObstacle != GetTiledMap()->getType(w.x, w.y) &&
+      nullptr == GetClosedListNode(wIndex)) {
 
-        //if diagonal make sure it has a valid diagonal connection
-        if (TERRAIN_TYPE::kObstacle != GetTiledMap()->getType(v.x, w.y)
-          || TERRAIN_TYPE::kObstacle != GetTiledMap()->getType(w.x, v.y)) {
-          PriorityPushBack(w); //enqueue w
+      PriorityPushBack(w); //enqueue w
 
-          //mark w as visited.
-          AddToClosedList(w, s_nextDirection[i]);
-        }
-      }
+      //mark w as visited.
+      AddToClosedList(w, s_nextDirection[i]);
     }
   }
 }
@@ -96,11 +99,10 @@ RTSBestFirstSearchMapGridWalker::StepSearch() {
 void 
 RTSBestFirstSearchMapGridWalker::PriorityPushBack(Vector2I& w)
 {
-  Vector2I target = GetTargetPos();
-  uint32 d = target.manhattanDist(w);
+  uint32 d = m_targetPos.manhattanDist(w);
 
   for (auto it = m_openList.begin(); it != m_openList.end(); ++it) {
-    if (it->v.manhattanDist(target) > d) {
+    if (it->v.manhattanDist(m_targetPos) > d) {
       m_openList.insert(it, w);
       return;
     }

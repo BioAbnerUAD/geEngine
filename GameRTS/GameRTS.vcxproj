@@ -168,6 +168,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="Include\RTSHealthBar.cpp" />
     <ClCompile Include="Source\Externals\imgui-SFML.cpp" />
     <ClCompile Include="Source\Externals\imgui.cpp" />
     <ClCompile Include="Source\Externals\imgui_demo.cpp" />
@@ -185,6 +186,7 @@
     <ClCompile Include="Source\RTSPathNode.cpp" />
     <ClCompile Include="Source\RTSTexture.cpp" />
     <ClCompile Include="Source\RTSTiledMap.cpp" />
+    <ClCompile Include="Source\RTSUnit.cpp" />
     <ClCompile Include="Source\RTSUnitType.cpp" />
     <ClCompile Include="Source\RTSWorld.cpp" />
   </ItemGroup>
@@ -197,12 +199,15 @@
     <ClInclude Include="Include\RTSDepthFirstSearchMapGridWalker.h" />
     <ClInclude Include="Include\RTSDijkstraMapGridWalker.h" />
     <ClInclude Include="Include\RTSExtensions.h" />
+    <ClInclude Include="Include\RTSHealthBar.h" />
     <ClInclude Include="Include\RTSMapGridWalker.h" />
     <ClInclude Include="Include\RTSPathNode.h" />
     <ClInclude Include="Include\RTSTexture.h" />
     <ClInclude Include="Include\RTSTiledMap.h" />
+    <ClInclude Include="Include\RTSUnit.h" />
     <ClInclude Include="Include\RTSUnitType.h" />
     <ClInclude Include="Include\RTSWorld.h" />
+    <ClInclude Include="RTSUnit.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

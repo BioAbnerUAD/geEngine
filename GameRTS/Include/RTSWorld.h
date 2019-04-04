@@ -2,25 +2,28 @@
 
 #include <gePrerequisitesUtil.h>
 #include <geVector2I.h>
+#include <geModule.h>
 
 #include <SFML/Graphics.hpp>
+
+#include "RTSHealthBar.h"
 
 using namespace geEngineSDK;
 
 class RTSTiledMap;
 class RTSMapGridWalker;
+class RTSUnit;
 
 namespace RTSGame {
   class RTSUnitType;
 }
 
-class RTSWorld
+class RTSWorld : public Module<RTSWorld>
 {
  public:
   RTSWorld();
   ~RTSWorld();
-
- public:
+public:
   bool
   init(sf::RenderTarget* pTarget);
 
@@ -47,11 +50,11 @@ class RTSWorld
   int8
   getCurrentWalkerState();
 
-  void
-  StartSearch();
+  FORCEINLINE const RTSUnit* 
+  GetActiveUnit() const { return m_activeUnit; }
 
   void 
-  StopSearch();
+  DestoryUnit(RTSUnit* unit);
 
  private:
 
@@ -61,14 +64,29 @@ class RTSWorld
   void
   queryRightClickEvent();
 
+  void 
+  paintTiles();
+
+  void 
+  putUnit();
+
+  void 
+  selectUnit();
+
+  void 
+  moveUnit();
 
   RTSTiledMap* m_pTiledMap;
-  List<RTSGame::RTSUnitType*> m_lstUnitTypes;
-  //List<RTSUnit*> m_lstUnits;
+  Vector<RTSGame::RTSUnitType*> m_lstUnitTypes;
+
+  List<RTSUnit*> m_lstUnits;
+  RTSUnit* m_activeUnit = nullptr;
   
   Vector<RTSMapGridWalker*> m_walkersList;
   RTSMapGridWalker* m_activeWalker = nullptr;
   int8 m_activeWalkerIndex = -1;
+
+  RTSHealthBar* m_pHealthBar;
 
   sf::RenderTarget* m_pTarget;
 };

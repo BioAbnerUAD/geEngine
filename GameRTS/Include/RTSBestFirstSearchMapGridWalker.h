@@ -13,10 +13,13 @@ public:
   ~RTSBestFirstSearchMapGridWalker();
 
   void 
-  StartSeach(bool stepMode);
+  GetPath(const Vector2I& pos, 
+          const Vector2I& target, 
+          Vector<Vector2I>* path, 
+          bool stepMode = false) override;
 
   void
-  StepSearch();
+  StepSearch() override;
 
 private:
   void

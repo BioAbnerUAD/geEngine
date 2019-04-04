@@ -24,6 +24,7 @@
 #include "RTSApplication.h"
 #include "RTSTiledMap.h"
 #include "RTSMapGridWalker.h"
+#include "RTSUnit.h"
 
 void
 loadMapFromFile(RTSApplication* pApp);
@@ -204,17 +205,17 @@ RTSApplication::updateFrame() {
 
   axisMovement *= GameOptions::s_MapMovementSpeed * deltaTime;
 
-  m_gameWorld.getTiledMap()->moveCamera(axisMovement.x, axisMovement.y);
+  getWorld()->getTiledMap()->moveCamera(axisMovement.x, axisMovement.y);
 
   //Update the world
-  m_gameWorld.update(deltaTime);
+  getWorld()->update(deltaTime);
 }
 
 void
 RTSApplication::renderFrame() {
   m_window->clear(sf::Color::Blue);
 
-  m_gameWorld.render();
+  getWorld()->render();
 
   ImGui::SFML::Render(*m_window);
 
@@ -232,16 +233,16 @@ RTSApplication::renderFrame() {
 
 void
 RTSApplication::postInit() {
-  m_gameWorld.init(m_window);
-  m_gameWorld.updateResolutionData();
+  RTSWorld::startUp();
+  getWorld()->init(m_window);
+  getWorld()->updateResolutionData();
 }
 
 void
 RTSApplication::postDestroy() {
-  m_gameWorld.destroy();
+  getWorld()->destroy();
+  RTSWorld::shutDown();
 }
-
-
 
 void
 loadMapFromFile(RTSApplication* pApp) {
@@ -295,7 +296,6 @@ mainMenu(RTSApplication* pApp) {
 
       ImGui::EndMenu();
     }
-    
     ImGui::EndMainMenuBar();
   }
 
@@ -316,60 +316,81 @@ mainMenu(RTSApplication* pApp) {
   }
   ImGui::End();
 
-  ImGui::Begin("Pathfinding");
+  ImGui::Begin("Tool");
   {
-    auto pPathfinderName = 
-      GameOptions::s_pathfinderNames[GameOptions::s_CurrentWalkerIndex];
+    ImGui::RadioButton("Terrain", &GameOptions::activeTool, RTSTools::kTerrain);
+    ImGui::SameLine();
+    ImGui::RadioButton("Place Unit", &GameOptions::activeTool, RTSTools::kPlaceUnit);
+    ImGui::SameLine();
+    ImGui::RadioButton("Move Unit", &GameOptions::activeTool, RTSTools::kMoveUnit);
 
-    if (ImGui::BeginCombo("Pathfinding Algorithm", pPathfinderName)) {
-      for (int8 n = 0; n < GameOptions::s_pathfinderNames.size(); n++) {
-        bool is_selected = 
-          (pPathfinderName == GameOptions::s_pathfinderNames[n]);
-        if (ImGui::Selectable(GameOptions::s_pathfinderNames[n], is_selected)) {
-          pPathfinderName = GameOptions::s_pathfinderNames[n];
-          GameOptions::s_CurrentWalkerIndex = n;
+    ImGui::Spacing(); ImGui::Spacing();
+
+    if (GameOptions::activeTool == RTSTools::kTerrain) {
+      ImGui::Text("Edit Terrain");
+      ImGui::Spacing();
+      ImGui::Text("Terrain Type");
+
+      for (int8 i = 0; i < TERRAIN_TYPE::kNumObjects; i++) {
+        ImGui::RadioButton(TERRAIN_TYPE::ES[i].c_str(),
+                           &GameOptions::s_selectedTerrainIndex,
+                           static_cast<TERRAIN_TYPE::E> (i));
+      }
+
+      ImGui::SliderInt("Brush Size", &GameOptions::s_brushSize, 1, 10);
+    }
+    else if (GameOptions::activeTool == RTSTools::kPlaceUnit){
+      ImGui::Text("Place Unit");
+      ImGui::Spacing();
+      ImGui::Text("Unit Type");
+
+      ImGui::RadioButton("Archer", &GameOptions::s_unitTypeIndex, 0);
+      ImGui::RadioButton("Knight", &GameOptions::s_unitTypeIndex, 1);
+      ImGui::RadioButton("Pikeman", &GameOptions::s_unitTypeIndex, 2);
+    }
+    else if (GameOptions::activeTool == RTSTools::kMoveUnit) {
+      ImGui::Text("Move Unit");
+      ImGui::Spacing();
+
+      ImGui::Checkbox("Draw Gizmos", &GameOptions::s_drawGridWalkerGizmos);
+      ImGui::Checkbox("Step Mode", &GameOptions::s_gridWalkerStepMode);
+
+      ImGui::Spacing();
+
+      auto pPathfinderName =
+        GameOptions::s_pathfinderNames[GameOptions::s_CurrentWalkerIndex];
+
+      if (ImGui::BeginCombo("Pathfinding Algorithm", pPathfinderName)) {
+        for (int8 n = 0; n < GameOptions::s_pathfinderNames.size(); n++) {
+          bool is_selected =
+            (pPathfinderName == GameOptions::s_pathfinderNames[n]);
+          if (ImGui::Selectable(GameOptions::s_pathfinderNames[n], is_selected)) {
+            pPathfinderName = GameOptions::s_pathfinderNames[n];
+            GameOptions::s_CurrentWalkerIndex = n;
+          }
+          if (is_selected) {
+            ImGui::SetItemDefaultFocus();
+          }
         }
-        if (is_selected) {
-          ImGui::SetItemDefaultFocus();
-        }
+        ImGui::EndCombo();
       }
-      ImGui::EndCombo();
-    }
 
-    static int32 index = 0;
-    ImGui::RadioButton("Move Walker", &index, 0); ImGui::SameLine();
-    ImGui::RadioButton("Move Target", &index, 1);
-    GameOptions::s_MoveWalkerOrTarget = static_cast<bool>(index);
+      ImGui::Spacing(); ImGui::Spacing(); ImGui::Spacing();
+      const RTSUnit* activeUnit = pApp->getWorld()->GetActiveUnit();
+      if (activeUnit) {
 
-    int8 walkerState = pApp->getWorld()->getCurrentWalkerState();
+        ImGui::Text(("\tUnit: " + activeUnit->GetUnitType()->GetName()).c_str());
 
-    if (walkerState == GRID_WALKER_STATE::kIdle ||
-        walkerState == GRID_WALKER_STATE::kDisplaying) {
-      if (ImGui::Button("Start Search")) {
-        pApp->getWorld()->StartSearch();
+        ImGui::Text(("\tHP: " + toString(activeUnit->GetCurrentHP()) + "/" + 
+                                toString(activeUnit->GetMaxHP())).c_str());
+
+        ImGui::Text(("\tPosition: (" + toString(activeUnit->GetPosition().x) + ", " +
+                                       toString(activeUnit->GetPosition().y) + ")").c_str());
       }
-    }
-    else
-    {
-      if (ImGui::Button("Stop Search")) {
-        pApp->getWorld()->StopSearch();
+      else {
+        ImGui::Text("\tUnit: NONE");
       }
     }
-    
-  }
-  ImGui::End();
-
-  ImGui::Begin("Terrain");
-  {
-    ImGui::Text("Terrain Texture");
-
-    for (int8 i = 0; i < TERRAIN_TYPE::kNumObjects; i++) {
-      ImGui::RadioButton(TERRAIN_TYPE::ES[i].c_str(),
-        &GameOptions::s_selectedTerrainIndex,
-        static_cast<TERRAIN_TYPE::E> (i));
-    }
-
-    ImGui::SliderInt("Brush Size", &GameOptions::s_brushSize, 1, 10);
   }
   ImGui::End();
 

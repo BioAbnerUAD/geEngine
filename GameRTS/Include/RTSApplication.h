@@ -26,7 +26,7 @@ class RTSApplication
 
   RTSWorld*
   getWorld() {
-    return &m_gameWorld;
+    return &RTSWorld::instance();
   }
 
   float getFPS() const {
@@ -63,7 +63,6 @@ class RTSApplication
  private:
    sf::RenderWindow* m_window;
    sf::Font* m_arialFont;
-   RTSWorld m_gameWorld;
 
    float m_fpsTimer;
    float m_fpsCounter;

@@ -21,14 +21,6 @@ GameOptions::BITSFHT_TILEHALFSIZE = Vector2I(GameOptions::BITSHFT_TILESIZE.x - 1
 
 bool GameOptions::s_GUIBlockingMouse = false;
 
-/**
- * true means move walker
- * false means move target
- */
-bool GameOptions::s_MoveWalkerOrTarget = true;
-
-int8 GameOptions::s_CurrentWalkerIndex = 0;
-
 const vector< ANSICHAR*> GameOptions::s_pathfinderNames = {
       "Breath First Search",
       "Depth First Search",
@@ -37,9 +29,19 @@ const vector< ANSICHAR*> GameOptions::s_pathfinderNames = {
       "AStar"
 };
 
+int8 GameOptions::s_CurrentWalkerIndex = static_cast<int8>(s_pathfinderNames.size() - 1);
+
 int32 GameOptions::s_selectedTerrainIndex = 0;
 
+int32 GameOptions::s_unitTypeIndex = 0;
+
 int32 GameOptions::s_brushSize = 1;
+
+int32 GameOptions::activeTool = 0;
+
+bool GameOptions::s_drawGridWalkerGizmos = false;
+
+bool GameOptions::s_gridWalkerStepMode = false;
 
 GameOptions&
 g_gameOptions() {
