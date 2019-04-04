@@ -1,4 +1,7 @@
 #include "RTSWorld.h"
+
+#include <geTime.h>
+
 #include "RTSTiledMap.h"
 
 #include "RTSUnitType.h"
@@ -122,7 +125,17 @@ RTSWorld::update(float deltaTime) {
       m_activeWalker->StepSearch();
   }
 
-  auto it = m_lstUnits.begin();
+  auto it = m_lsActiveUnits.begin();
+  while (it != m_lsActiveUnits.end()) {
+    if ((*it)->GetCurrentHP() <= 0) {
+      it = m_lsActiveUnits.erase(it);
+    }
+    else {
+      ++it;
+    }
+  }
+
+  it = m_lstUnits.begin();
   while (it != m_lstUnits.end()) {
     if (nullptr == (*it)) {
       it = m_lstUnits.erase(it);
@@ -131,10 +144,6 @@ RTSWorld::update(float deltaTime) {
       (*it)->Update(deltaTime);
       ++it;
     }
-  }
-
-  if (m_activeUnit && m_activeUnit->GetCurrentHP() <= 0) {
-    m_activeUnit = nullptr;
   }
 }
 
@@ -253,8 +262,12 @@ RTSWorld::putUnit() {
 
 void
 RTSWorld::selectUnit() {
+  static float lastClickTime = 0;
+  float clickTime;
   sf::Vector2i mousePos;
   Vector2I mapPos;
+
+  clickTime = Time::instance().getTime();
 
   mousePos = sf::Mouse::getPosition();
 
@@ -262,60 +275,96 @@ RTSWorld::selectUnit() {
                                     static_cast<int32>(mousePos.y),
                                     mapPos.x, mapPos.y);
 
-  RTSUnit* lastActiveUnit = m_activeUnit;
-  m_activeUnit = nullptr;
+  List<RTSUnit*> prevActiveUnits = m_lsActiveUnits;
+  RTSUnit* lowPriority = nullptr;
+  m_lsActiveUnits.clear();
 
   for (auto it = m_lstUnits.begin(); it != m_lstUnits.end(); ++it) {
     if (nullptr != (*it) && 
         (*it)->GetPosition() == mapPos &&
-        (*it)->GetCurrentHP() > 0 && 
-        (*it) != lastActiveUnit) {
-
-      m_activeUnit = (*it);
-      m_activeWalker->Reset();
-      break;
+        (*it)->GetCurrentHP() > 0) {
+      auto search = std::find(prevActiveUnits.begin(), prevActiveUnits.end(), (*it));
+      if (prevActiveUnits.end() != search) {
+        if (clickTime - lastClickTime <= 0.25f) {
+          doubleClickUnit(*it);
+          break;
+        }
+        else {
+          lowPriority = *it;
+        }
+      }
+      else {
+        m_lsActiveUnits.push_back(*it);
+        break;
+      }
     }
   }
 
+  if (m_lsActiveUnits.size() == 0 && lowPriority) {
+    m_lsActiveUnits.push_back(lowPriority);
+  }
+
+  lastClickTime = clickTime;
   m_activeWalker->Reset();
+}
+
+void 
+RTSWorld::doubleClickUnit(RTSUnit* unit) {
+  for each (RTSUnit* otherUnit in m_lstUnits) {
+    if (unit->GetUnitType() == otherUnit->GetUnitType() &&
+        otherUnit->GetCurrentHP() > 0 && 
+        100.f >= Vector2::distSquared(otherUnit->GetRawPosition(), 
+                                      unit->GetRawPosition())) {
+      m_lsActiveUnits.push_back(otherUnit);
+    }
+  }
 }
 
 void
 RTSWorld::moveUnit() {
-  if (m_activeUnit) {
-    //This moves the 'Active Walker' to the tile that is being clicked on
-    sf::Vector2i mousePos = sf::Mouse::getPosition();
-    Vector2I mapPos;
-  
-    //Check which tile was clicked on
-    mousePos = sf::Mouse::getPosition();
-  
-    m_pTiledMap->getScreenToMapCoords(static_cast<int32>(mousePos.x),
-                                      static_cast<int32>(mousePos.y),
-                                      mapPos.x, mapPos.y);
-  
-    //Make sure that there is no obstacle in this place
-    if (TERRAIN_TYPE::kObstacle != m_pTiledMap->getType(mapPos.x, mapPos.y)) {
+  if (m_lsActiveUnits.size() == 0) {
+    return;
+  }
 
-      RTSUnit* attackedUnit = nullptr;
+  //This moves the 'Active Walker' to the tile that is being clicked on
+  sf::Vector2i mousePos = sf::Mouse::getPosition();
+  Vector2I mapPos;
 
-      for (auto it = m_lstUnits.begin(); it != m_lstUnits.end(); ++it) {
-        if ((*it)->GetPosition() == mapPos && 
-            (*it) != m_activeUnit && 
-            (*it)->GetCurrentHP() > 0) {
+  //Check which tile was clicked on
+  mousePos = sf::Mouse::getPosition();
 
-          attackedUnit = (*it);
-          break;
+  m_pTiledMap->getScreenToMapCoords(static_cast<int32>(mousePos.x),
+                                    static_cast<int32>(mousePos.y),
+                                    mapPos.x, mapPos.y);
+
+  //Make sure that there is no obstacle in this place
+  if (TERRAIN_TYPE::kObstacle != m_pTiledMap->getType(mapPos.x, mapPos.y)) {
+
+    RTSUnit* attackedUnit = nullptr;
+
+    for (auto it = m_lstUnits.begin(); it != m_lstUnits.end(); ++it) {
+      auto search = std::find(m_lsActiveUnits.begin(), m_lsActiveUnits.end(), (*it));
+      if (search == m_lsActiveUnits.end() &&
+          (*it)->GetPosition() == mapPos &&
+          (*it)->GetCurrentHP() > 0) {
+
+        attackedUnit = (*it);
+        break;
+      }
+    }
+
+    if (attackedUnit) {
+      for each(RTSUnit* unit in m_lsActiveUnits) {
+        unit->AttackUnit(attackedUnit);
+      }
+    }
+    else {
+      for each(RTSUnit* unit in m_lsActiveUnits) {
+        // Make sure it's not the same tile where the 'Active Unit' is already at
+        if (unit->GetPosition() != mapPos) {
+          unit->ClearTarget();
+          unit->GoToPosition(mapPos);
         }
-      }
-
-      if (attackedUnit) {
-        m_activeUnit->AttackUnit(attackedUnit);
-      }
-      // Make sure it's not the same tile where the 'Active Unit' is already at
-      else if (m_activeUnit->GetPosition() != mapPos) {
-        m_activeUnit->ClearTarget();
-        m_activeUnit->GoToPosition(mapPos);
       }
     }
   }
@@ -323,6 +372,15 @@ RTSWorld::moveUnit() {
 
 void 
 RTSWorld::DestoryUnit(RTSUnit* unit) {
+  for (auto it = m_lsActiveUnits.begin(); it != m_lsActiveUnits.end();) {
+    if ((*it) == unit) {
+      it = m_lsActiveUnits.erase(it);
+    }
+    else {
+      ++it;
+    }
+  }
+
   decltype(m_lstUnits.begin()) UnitInList;
   for (auto it = m_lstUnits.begin(); it != m_lstUnits.end(); ++it) {
     if ((*it) == unit) {
@@ -333,18 +391,14 @@ RTSWorld::DestoryUnit(RTSUnit* unit) {
     }
   }
 
-  ge_delete(*UnitInList);
+  ge_delete(unit);
   *UnitInList = nullptr;
-
-  if (unit == m_activeUnit) {
-    m_activeUnit = nullptr;
-  }
 }
 
 void
 RTSWorld::render() {
   m_pTiledMap->render();
-  if (m_activeWalker && m_activeUnit) {
+  if (m_activeWalker && m_lsActiveUnits.size() > 0) {
     m_activeWalker->render(m_pTarget);
   }
   for each (auto unit in m_lstUnits) {
@@ -352,25 +406,29 @@ RTSWorld::render() {
       unit->Render();
     }
   }
-  if (m_activeUnit && m_activeUnit->GetCurrentHP() > 0) {
-    Vector2 screenPos, position = m_activeUnit->GetRawPosition();
-    Vector2I iScreenPos, iPosition = m_activeUnit->GetPosition();
-    Vector2I mapSize = RTSWorld::instance().getTiledMap()->getMapSize();
+  if (m_lsActiveUnits.size() > 0) {
+    for each (auto unit in m_lsActiveUnits) {
+      if (unit->GetCurrentHP() <= 0) { continue; }
 
-    iPosition.x = Math::clamp(iPosition.x, 0, mapSize.x - 1);
-    iPosition.y = Math::clamp(iPosition.y, 0, mapSize.y - 1);
+      Vector2 screenPos, position = unit->GetRawPosition();
+      Vector2I iScreenPos, iPosition = unit->GetPosition();
+      Vector2I mapSize = RTSWorld::instance().getTiledMap()->getMapSize();
 
-    RTSWorld::instance().getTiledMap()->getMapToScreenCoords(iPosition.x,
-                                                             iPosition.y,
-                                                             iScreenPos.x,
-                                                             iScreenPos.y);
+      iPosition.x = Math::clamp(iPosition.x, 0, mapSize.x - 1);
+      iPosition.y = Math::clamp(iPosition.y, 0, mapSize.y - 1);
 
-    screenPos.x = iScreenPos.x + (position.x - iPosition.x) * TILESIZE_X;
-    screenPos.y = iScreenPos.y + (position.y - iPosition.y) * TILESIZE_Y;
+      RTSWorld::instance().getTiledMap()->getMapToScreenCoords(iPosition.x,
+                                                               iPosition.y,
+                                                               iScreenPos.x,
+                                                               iScreenPos.y);
 
-    m_pHealthBar->Draw(screenPos + Vector2(32, -35),
-                       m_activeUnit->GetCurrentHP(),
-                       m_activeUnit->GetMaxHP());
+      screenPos.x = iScreenPos.x + (position.x - iPosition.x) * TILESIZE_X;
+      screenPos.y = iScreenPos.y + (position.y - iPosition.y) * TILESIZE_Y;
+
+      m_pHealthBar->Draw(screenPos + Vector2(32, -35),
+                         unit->GetCurrentHP(),
+                         unit->GetMaxHP());
+    }
   }
 }
 

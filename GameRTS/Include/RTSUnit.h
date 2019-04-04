@@ -54,6 +54,12 @@ public:
   int32 
   GetCurrentHP() const { return m_currentHP; }
 
+  uint32 
+  GetDPS() const { return m_damagePerSecond; }
+
+  float 
+  GetAttackRange() const { return m_range; }
+
 private:
   void 
   FollowPath(float deltaTime);

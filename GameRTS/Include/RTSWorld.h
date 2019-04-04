@@ -50,8 +50,8 @@ public:
   int8
   getCurrentWalkerState();
 
-  FORCEINLINE const RTSUnit* 
-  GetActiveUnit() const { return m_activeUnit; }
+  FORCEINLINE const List<RTSUnit*>
+  GetActiveUnits() const { return m_lsActiveUnits; }
 
   void 
   DestoryUnit(RTSUnit* unit);
@@ -74,13 +74,16 @@ public:
   selectUnit();
 
   void 
+  doubleClickUnit(RTSUnit* unit);
+
+  void 
   moveUnit();
 
   RTSTiledMap* m_pTiledMap;
   Vector<RTSGame::RTSUnitType*> m_lstUnitTypes;
 
   List<RTSUnit*> m_lstUnits;
-  RTSUnit* m_activeUnit = nullptr;
+  List<RTSUnit*> m_lsActiveUnits;
   
   Vector<RTSMapGridWalker*> m_walkersList;
   RTSMapGridWalker* m_activeWalker = nullptr;

@@ -72,7 +72,8 @@ RTSUnit::Update(float deltaTime) {
       m_target = nullptr;
       m_pathToFollow.clear();
     }
-    else if (Vector2::distance(m_target->m_position, m_position) <= m_range) {
+    else if (m_range * m_range >= Vector2::distSquared(m_target->m_position,
+                                                       m_position)) {
       m_currentAnim = ANIMATIONS::kATTACK;
       m_lookDirection = DIRECTIONS::vectorToDirection(m_target->m_position - m_position);
     }
@@ -98,11 +99,11 @@ RTSUnit::FollowPath(float deltaTime) {
                  static_cast<float>(m_pathToFollow.back().y));
 
   if (m_pathToFollow.size() == 1) {
-    if (Vector2::distance(m_position, node) <= 0.1f) {
+    if (Vector2::distSquared(m_position, node) <= 0.01f) {
       m_pathToFollow.pop_back();
     }
   }
-  else if (Vector2::distance(m_position, node) <= 0.6f) {
+  else if (Vector2::distSquared(m_position, node) <= 0.36f) {
     m_pathToFollow.pop_back();
   }
 

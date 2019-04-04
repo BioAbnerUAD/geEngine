@@ -145,7 +145,7 @@ namespace RTSGame {
     int32 numFrame = Math::floor(m_animTime / m_animationFrames[animIndex].duration
                                  * m_animationFrames[animIndex].numFrames);
 
-    if (numFrame < m_animationFrames[animIndex].numFrames) {
+    if (numFrame < int32(m_animationFrames[animIndex].numFrames)) {
       auto frame = m_animationFrames[animIndex].frames[direction][numFrame];
 
       m_texture.setPosition(screenPos.x + HALFTILESIZE_X, screenPos.y + HALFTILESIZE_Y);

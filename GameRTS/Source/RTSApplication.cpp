@@ -318,7 +318,7 @@ mainMenu(RTSApplication* pApp) {
 
   ImGui::Begin("Tool");
   {
-    ImGui::RadioButton("Terrain", &GameOptions::activeTool, RTSTools::kTerrain);
+    ImGui::RadioButton("Edit Terrain", &GameOptions::activeTool, RTSTools::kTerrain);
     ImGui::SameLine();
     ImGui::RadioButton("Place Unit", &GameOptions::activeTool, RTSTools::kPlaceUnit);
     ImGui::SameLine();
@@ -327,8 +327,6 @@ mainMenu(RTSApplication* pApp) {
     ImGui::Spacing(); ImGui::Spacing();
 
     if (GameOptions::activeTool == RTSTools::kTerrain) {
-      ImGui::Text("Edit Terrain");
-      ImGui::Spacing();
       ImGui::Text("Terrain Type");
 
       for (int8 i = 0; i < TERRAIN_TYPE::kNumObjects; i++) {
@@ -340,8 +338,6 @@ mainMenu(RTSApplication* pApp) {
       ImGui::SliderInt("Brush Size", &GameOptions::s_brushSize, 1, 10);
     }
     else if (GameOptions::activeTool == RTSTools::kPlaceUnit){
-      ImGui::Text("Place Unit");
-      ImGui::Spacing();
       ImGui::Text("Unit Type");
 
       ImGui::RadioButton("Archer", &GameOptions::s_unitTypeIndex, 0);
@@ -349,10 +345,9 @@ mainMenu(RTSApplication* pApp) {
       ImGui::RadioButton("Pikeman", &GameOptions::s_unitTypeIndex, 2);
     }
     else if (GameOptions::activeTool == RTSTools::kMoveUnit) {
-      ImGui::Text("Move Unit");
-      ImGui::Spacing();
 
       ImGui::Checkbox("Draw Gizmos", &GameOptions::s_drawGridWalkerGizmos);
+      ImGui::SameLine();
       ImGui::Checkbox("Step Mode", &GameOptions::s_gridWalkerStepMode);
 
       ImGui::Spacing();
@@ -376,16 +371,32 @@ mainMenu(RTSApplication* pApp) {
       }
 
       ImGui::Spacing(); ImGui::Spacing(); ImGui::Spacing();
-      const RTSUnit* activeUnit = pApp->getWorld()->GetActiveUnit();
-      if (activeUnit) {
+      const List<RTSUnit*> activeUnits = pApp->getWorld()->GetActiveUnits();
+      if (activeUnits.size() == 1) {
+        auto activeUnit = activeUnits.front();
 
         ImGui::Text(("\tUnit: " + activeUnit->GetUnitType()->GetName()).c_str());
 
         ImGui::Text(("\tHP: " + toString(activeUnit->GetCurrentHP()) + "/" + 
                                 toString(activeUnit->GetMaxHP())).c_str());
 
-        ImGui::Text(("\tPosition: (" + toString(activeUnit->GetPosition().x) + ", " +
-                                       toString(activeUnit->GetPosition().y) + ")").c_str());
+        ImGui::Text(("\tPosition: (" + toString(activeUnit->GetRawPosition().x) + ", " +
+                                       toString(activeUnit->GetRawPosition().y) + ")").c_str());
+
+        ImGui::Text(("\tAttack: " + toString(activeUnit->GetDPS())).c_str());
+
+        ImGui::Text(("\tRange: " + toString(activeUnit->GetAttackRange())).c_str());
+      }
+      else if (activeUnits.size() > 1) {
+        for (auto it = activeUnits.begin(); it != activeUnits.end(); ++it) {
+          auto activeUnit = *it;
+          ImGui::Text(("\tUnit: " + activeUnit->GetUnitType()->GetName()).c_str());
+
+          ImGui::SameLine();
+
+          ImGui::Text(("\tHP: " + toString(activeUnit->GetCurrentHP()) + "/" +
+                       toString(activeUnit->GetMaxHP())).c_str());
+        }
       }
       else {
         ImGui::Text("\tUnit: NONE");
