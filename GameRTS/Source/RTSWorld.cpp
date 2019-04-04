@@ -18,6 +18,8 @@ using namespace RTSGame;
 RTSWorld::RTSWorld() {
   m_pTiledMap = nullptr;
   m_pHealthBar = nullptr;
+  m_pSelectionRect = nullptr;
+  m_pActiveUnitCircle = nullptr;
   m_activeWalkerIndex = -1;	//-1 = Invalid index
 }
 
@@ -71,6 +73,22 @@ RTSWorld::init(sf::RenderTarget* pTarget) {
 
   m_pHealthBar = ge_new<RTSHealthBar>(*m_pTarget);
 
+  m_pSelectionRect = ge_new<sf::RectangleShape>();
+  m_pSelectionRect->setFillColor(sf::Color::Transparent);
+  m_pSelectionRect->setOutlineColor(sf::Color::White);
+  m_pSelectionRect->setOutlineThickness(1);
+
+  m_pActiveUnitCircle = ge_new<sf::CircleShape>();
+  m_pActiveUnitCircle->setFillColor(sf::Color::Transparent);
+  m_pActiveUnitCircle->setOutlineColor(sf::Color::White);
+  m_pActiveUnitCircle->setOutlineThickness(1);
+  m_pActiveUnitCircle->setRadius(HALFTILESIZE_X * .5f);
+  m_pActiveUnitCircle->setOrigin(HALFTILESIZE_X * .5f, HALFTILESIZE_X * .5f);
+
+  #ifdef MAP_IS_ISOMETRIC
+  m_pActiveUnitCircle->setScale(sf::Vector2f(1.f, 0.5f));
+  #endif
+
   return true;
 }
 
@@ -101,6 +119,16 @@ RTSWorld::destroy() {
   if (m_pHealthBar) {
     ge_delete(m_pHealthBar);
     m_pHealthBar = nullptr;
+  }
+
+  if (m_pSelectionRect) {
+    ge_delete(m_pSelectionRect);
+    m_pSelectionRect = nullptr;
+  }
+
+  if (m_pActiveUnitCircle) {
+    ge_delete(m_pActiveUnitCircle);
+    m_pActiveUnitCircle = nullptr;
   }
 }
 
@@ -150,8 +178,10 @@ RTSWorld::update(float deltaTime) {
 void
 RTSWorld::queryLeftClickEvent() {
   static bool leftClickWasPressed = false;
+  static Vector2I clickStartPos;
 
   if (sf::Mouse::isButtonPressed(sf::Mouse::Left)) {
+    selectionRectEnabled = false;
 
     if (GameOptions::activeTool == RTSTools::kTerrain) {
       paintTiles();
@@ -161,14 +191,44 @@ RTSWorld::queryLeftClickEvent() {
         putUnit();
       }
       else if (GameOptions::activeTool == RTSTools::kMoveUnit) {
-        selectUnit();
+        auto sfPos = sf::Mouse::getPosition();
+        clickStartPos = { sfPos.x, sfPos.y };
+      }
+    }
+    else if (GameOptions::activeTool == RTSTools::kMoveUnit)
+    {
+      auto sfPos = sf::Mouse::getPosition();
+      Vector2I currClickPos = { sfPos.x, sfPos.y };
+
+      if (clickStartPos.Vector2I::manhattanDist(currClickPos) > 20) {
+        selectionRectEnabled = true;
+        m_pSelectionRect->setPosition(float(clickStartPos.x), 
+                                      float(clickStartPos.y));
+
+        Vector2I rectSize = currClickPos - clickStartPos;
+
+        m_pSelectionRect->setSize(sf::Vector2f(float(rectSize.x), 
+                                               float(rectSize.y)));
       }
     }
 
     leftClickWasPressed = true;
   }
   else {
+    if (GameOptions::activeTool == RTSTools::kMoveUnit 
+        && leftClickWasPressed) {
+      if (selectionRectEnabled) {
+        auto sfPos = sf::Mouse::getPosition();
+        Vector2I currClickPos = { sfPos.x, sfPos.y };
+
+        selectAllUnitsIn(clickStartPos, currClickPos);
+      }
+      else {
+        selectUnit();
+      }
+    }
     leftClickWasPressed = false;
+    selectionRectEnabled = false;
   }
 }
 
@@ -205,8 +265,7 @@ RTSWorld::paintTiles()   {
     //Check which tile was clicked on
     mousePos = sf::Mouse::getPosition();
 
-    m_pTiledMap->getScreenToMapCoords(static_cast<int32>(mousePos.x),
-                                      static_cast<int32>(mousePos.y),
+    m_pTiledMap->getScreenToMapCoords(mousePos.x, mousePos.y,
                                       mapPos.x, mapPos.y);
 
     clickedTileType = static_cast<int8>(GameOptions::s_selectedTerrainIndex);
@@ -239,7 +298,7 @@ RTSWorld::paintTiles()   {
 void 
 RTSWorld::putUnit() {
   sf::Vector2i mousePos;
-  Vector2I mapPos;
+  Vector2 mapPos;
 
   if (m_activeWalker->GetState() == GRID_WALKER_STATE::kDisplaying) {
     m_activeWalker->Reset();
@@ -249,9 +308,8 @@ RTSWorld::putUnit() {
 
     mousePos = sf::Mouse::getPosition();
 
-    m_pTiledMap->getScreenToMapCoords(static_cast<int32>(mousePos.x),
-                                      static_cast<int32>(mousePos.y),
-                                      mapPos.x, mapPos.y);
+    m_pTiledMap->getRawScreenToMapCoords(mousePos.x, mousePos.y,
+                                         mapPos.x, mapPos.y);
 
     m_lstUnits.push_back(new RTSUnit(0, 
                                      m_lstUnitTypes[GameOptions::s_unitTypeIndex], 
@@ -265,15 +323,14 @@ RTSWorld::selectUnit() {
   static float lastClickTime = 0;
   float clickTime;
   sf::Vector2i mousePos;
-  Vector2I mapPos;
+  Vector2 mapPos;
 
   clickTime = Time::instance().getTime();
 
   mousePos = sf::Mouse::getPosition();
 
-  m_pTiledMap->getScreenToMapCoords(static_cast<int32>(mousePos.x),
-                                    static_cast<int32>(mousePos.y),
-                                    mapPos.x, mapPos.y);
+  m_pTiledMap->getRawScreenToMapCoords(mousePos.x, mousePos.y,
+                                       mapPos.x, mapPos.y);
 
   List<RTSUnit*> prevActiveUnits = m_lsActiveUnits;
   RTSUnit* lowPriority = nullptr;
@@ -281,8 +338,8 @@ RTSWorld::selectUnit() {
 
   for (auto it = m_lstUnits.begin(); it != m_lstUnits.end(); ++it) {
     if (nullptr != (*it) && 
-        (*it)->GetPosition() == mapPos &&
-        (*it)->GetCurrentHP() > 0) {
+        (*it)->GetCurrentHP() > 0 &&
+        Vector2::distSquared((*it)->GetRawPosition(), mapPos) <=  0.4f) {
       auto search = std::find(prevActiveUnits.begin(), prevActiveUnits.end(), (*it));
       if (prevActiveUnits.end() != search) {
         if (clickTime - lastClickTime <= 0.25f) {
@@ -328,13 +385,15 @@ RTSWorld::moveUnit() {
 
   //This moves the 'Active Walker' to the tile that is being clicked on
   sf::Vector2i mousePos = sf::Mouse::getPosition();
-  Vector2I mapPos;
+  Vector2I mapPos; Vector2 mapPosRaw;
 
   //Check which tile was clicked on
   mousePos = sf::Mouse::getPosition();
 
-  m_pTiledMap->getScreenToMapCoords(static_cast<int32>(mousePos.x),
-                                    static_cast<int32>(mousePos.y),
+  m_pTiledMap->getRawScreenToMapCoords(mousePos.x, mousePos.y,
+                                       mapPosRaw.x, mapPosRaw.y);
+
+  m_pTiledMap->getScreenToMapCoords(mousePos.x, mousePos.y,
                                     mapPos.x, mapPos.y);
 
   //Make sure that there is no obstacle in this place
@@ -344,9 +403,8 @@ RTSWorld::moveUnit() {
 
     for (auto it = m_lstUnits.begin(); it != m_lstUnits.end(); ++it) {
       auto search = std::find(m_lsActiveUnits.begin(), m_lsActiveUnits.end(), (*it));
-      if (search == m_lsActiveUnits.end() &&
-          (*it)->GetPosition() == mapPos &&
-          (*it)->GetCurrentHP() > 0) {
+      if (search == m_lsActiveUnits.end() && (*it)->GetCurrentHP() > 0  &&
+          Vector2::distSquared((*it)->GetRawPosition(), mapPosRaw) <= 0.4f) {
 
         attackedUnit = (*it);
         break;
@@ -368,6 +426,30 @@ RTSWorld::moveUnit() {
       }
     }
   }
+}
+
+void 
+RTSWorld::selectAllUnitsIn(Vector2I clickStartPos, Vector2I currClickPos) {
+  m_lsActiveUnits.clear();
+
+  for each (RTSUnit* unit in m_lstUnits) {
+    if (nullptr != unit && unit->GetCurrentHP() > 0) {
+
+      Vector2I screenPos;
+      Vector2 unitPos = unit->GetRawPosition();
+
+      m_pTiledMap->getRawMapToScreenCoords(unitPos.x, unitPos.y, screenPos.x, screenPos.y);
+
+      if (screenPos.x <= Math::max(clickStartPos.x, currClickPos.x) &&
+          screenPos.x >= Math::min(clickStartPos.x, currClickPos.x) &&
+          screenPos.y <= Math::max(clickStartPos.y, currClickPos.y) &&
+          screenPos.y >= Math::min(clickStartPos.y, currClickPos.y)) {
+        m_lsActiveUnits.push_back(unit);
+      }
+    }
+  }
+
+  m_activeWalker->Reset();
 }
 
 void 
@@ -401,34 +483,40 @@ RTSWorld::render() {
   if (m_activeWalker && m_lsActiveUnits.size() > 0) {
     m_activeWalker->render(m_pTarget);
   }
+  for each (auto unit in m_lsActiveUnits) {
+    if (nullptr == unit || unit->GetCurrentHP() <= 0) { continue; }
+
+    Vector2 position = unit->GetRawPosition();
+    Vector2I screenPos;
+
+    m_pTiledMap->getRawMapToScreenCoords(position.x, position.y,
+                                         screenPos.x, screenPos.y);
+
+    m_pActiveUnitCircle->setPosition(float(screenPos.x), float(screenPos.y));
+    m_pTarget->draw(*m_pActiveUnitCircle);
+  }
+
   for each (auto unit in m_lstUnits) {
     if (unit) {
       unit->Render();
     }
   }
-  if (m_lsActiveUnits.size() > 0) {
-    for each (auto unit in m_lsActiveUnits) {
-      if (unit->GetCurrentHP() <= 0) { continue; }
 
-      Vector2 screenPos, position = unit->GetRawPosition();
-      Vector2I iScreenPos, iPosition = unit->GetPosition();
-      Vector2I mapSize = RTSWorld::instance().getTiledMap()->getMapSize();
+  for each (auto unit in m_lsActiveUnits) {
+    if (nullptr == unit || unit->GetCurrentHP() <= 0) { continue; }
 
-      iPosition.x = Math::clamp(iPosition.x, 0, mapSize.x - 1);
-      iPosition.y = Math::clamp(iPosition.y, 0, mapSize.y - 1);
+    Vector2 position = unit->GetRawPosition();
+    Vector2I screenPos;
 
-      RTSWorld::instance().getTiledMap()->getMapToScreenCoords(iPosition.x,
-                                                               iPosition.y,
-                                                               iScreenPos.x,
-                                                               iScreenPos.y);
+    m_pTiledMap->getRawMapToScreenCoords(position.x, position.y,
+                                         screenPos.x, screenPos.y);
 
-      screenPos.x = iScreenPos.x + (position.x - iPosition.x) * TILESIZE_X;
-      screenPos.y = iScreenPos.y + (position.y - iPosition.y) * TILESIZE_Y;
-
-      m_pHealthBar->Draw(screenPos + Vector2(32, -35),
-                         unit->GetCurrentHP(),
-                         unit->GetMaxHP());
-    }
+    m_pHealthBar->Draw(screenPos,
+                       unit->GetCurrentHP(),
+                       unit->GetMaxHP());
+  }
+  if (selectionRectEnabled) {
+    m_pTarget->draw(*m_pSelectionRect);
   }
 }
 

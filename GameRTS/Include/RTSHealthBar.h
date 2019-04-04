@@ -14,7 +14,7 @@ public:
   ~RTSHealthBar();
 
   void 
-  Draw(Vector2 position, uint32 currentHealth, uint32 maxHealth);
+  Draw(Vector2I position, uint32 currentHealth, uint32 maxHealth);
 
   sf::RectangleShape m_CurrentHealth;
   sf::RectangleShape m_HealthBackground;

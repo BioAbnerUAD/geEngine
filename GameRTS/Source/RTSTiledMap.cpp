@@ -133,6 +133,23 @@ RTSTiledMap::getScreenToMapCoords(const int32 scrX,
 }
 
 void
+RTSTiledMap::getRawScreenToMapCoords(const int32 scrX,
+                                     const int32 scrY,
+                                     float &mapX,
+                                     float &mapY) const {
+  #ifdef MAP_IS_ISOMETRIC
+  float fscrX = ((float)(scrX - HALFTILESIZE_X - m_PreCalc_ScreenDeface.x) / TILESIZE_X);
+  float fscrY = ((float)(scrY - HALFTILESIZE_Y - m_PreCalc_ScreenDeface.y) / TILESIZE_Y);
+
+  mapX = (fscrX + fscrY);
+  mapY = (fscrY - fscrX);
+  #else
+  mapX = float(scrX - HALFTILESIZE_X - m_PreCalc_ScreenDeface.x) / TILESIZE_X;
+  mapY = float(scrY - HALFTILESIZE_Y - m_PreCalc_ScreenDeface.y) / TILESIZE_Y;
+  #endif
+}
+
+void
 RTSTiledMap::getMapToScreenCoords(const int32 mapX,
                                   const int32 mapY,
                                   int32 &scrX,
@@ -149,6 +166,23 @@ RTSTiledMap::getMapToScreenCoords(const int32 mapX,
   scrX = (mapX << GameOptions::BITSHFT_TILESIZE.x) + m_PreCalc_ScreenDeface.x;
   scrY = (mapY << GameOptions::BITSHFT_TILESIZE.y) + m_PreCalc_ScreenDeface.y;
 #endif
+}
+
+void
+RTSTiledMap::getRawMapToScreenCoords(const float mapX,
+                                     const float mapY,
+                                     int32 &scrX,
+                                     int32 &scrY) const {
+  #ifdef MAP_IS_ISOMETRIC
+  scrX = Math::round(mapX - mapY) * TILESIZE_X;
+  scrY = Math::round(mapX + mapY) * TILESIZE_Y;
+
+  scrX += HALFTILESIZE_X + m_PreCalc_ScreenDeface.x;
+  scrY += HALFTILESIZE_Y + m_PreCalc_ScreenDeface.y;
+  #else
+  scrX = Math::round(mapX * TILESIZE_X) + HALFTILESIZE_X + m_PreCalc_ScreenDeface.x;
+  scrY = Math::round(mapY * TILESIZE_Y) + HALFTILESIZE_Y + m_PreCalc_ScreenDeface.y;
+  #endif
 }
 
 void

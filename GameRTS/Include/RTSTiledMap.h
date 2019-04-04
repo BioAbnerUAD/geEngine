@@ -170,12 +170,23 @@ class RTSTiledMap
                        int32 &mapX,
                        int32 &mapY) const;
 
+  void 
+  getRawScreenToMapCoords(const int32 scrX, 
+                          const int32 scrY, 
+                          float &mapX, 
+                          float &mapY) const;
+  
   void
   getMapToScreenCoords(const int32 mapX,
                        const int32 mapY,
                        int32 &scrX,
                        int32 &scrY) const;
 
+  void 
+  getRawMapToScreenCoords(const float mapX, 
+                          const float mapY, 
+                          int32 &scrX, 
+                          int32 &scrY) const;
  private:
   Vector2I m_mapSize;
   Vector<MapTile> m_mapGrid;

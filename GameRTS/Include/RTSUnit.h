@@ -10,7 +10,7 @@ class RTSUnit
 public:
   RTSUnit(SIZE_T playerID, 
           RTSGame::RTSUnitType* pUnitType, 
-          Vector2I initPos, 
+          Vector2 initPos, 
           RTSMapGridWalker** lpGridWalker);
 
   ~RTSUnit();

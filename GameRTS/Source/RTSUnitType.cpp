@@ -125,20 +125,12 @@ namespace RTSGame {
                       DIRECTIONS::E direction, 
                       const Vector2 & position, 
                       float m_animTime) {
-    Vector2 screenPos;
-    Vector2I iScreenPos, iPosition(Math::round(position.x), Math::round(position.y));
-    Vector2I mapSize = RTSWorld::instance().getTiledMap()->getMapSize();
+    Vector2I screenPos;
 
-    iPosition.x = Math::clamp(iPosition.x, 0, mapSize.x - 1);
-    iPosition.y = Math::clamp(iPosition.y, 0, mapSize.y - 1);
-
-    RTSWorld::instance().getTiledMap()->getMapToScreenCoords(iPosition.x,
-                                                             iPosition.y,
-                                                             iScreenPos.x,
-                                                             iScreenPos.y);
-
-    screenPos.x = iScreenPos.x + (position.x - iPosition.x) * TILESIZE_X;
-    screenPos.y = iScreenPos.y + (position.y - iPosition.y) * TILESIZE_Y;
+    RTSWorld::instance().getTiledMap()->getRawMapToScreenCoords(position.x, 
+                                                                position.y,
+                                                                screenPos.x, 
+                                                                screenPos.y);
 
     int32 animIndex = GetAnimIndex(activeAnim);
 
@@ -148,7 +140,7 @@ namespace RTSGame {
     if (numFrame < int32(m_animationFrames[animIndex].numFrames)) {
       auto frame = m_animationFrames[animIndex].frames[direction][numFrame];
 
-      m_texture.setPosition(screenPos.x + HALFTILESIZE_X, screenPos.y + HALFTILESIZE_Y);
+      m_texture.setPosition(screenPos.x, screenPos.y);
       m_texture.setSrcRect(frame.x, frame.y, frame.w, frame.h);
       m_texture.setOrigin(frame.w / 2, frame.h);
       m_texture.setScale(frame.bSwap ? -1.f : 1.f, 1.f);

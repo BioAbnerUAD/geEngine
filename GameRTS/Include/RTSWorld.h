@@ -74,6 +74,9 @@ public:
   selectUnit();
 
   void 
+  selectAllUnitsIn(Vector2I clickStartPos, Vector2I currClickPos);
+
+  void 
   doubleClickUnit(RTSUnit* unit);
 
   void 
@@ -90,6 +93,10 @@ public:
   int8 m_activeWalkerIndex = -1;
 
   RTSHealthBar* m_pHealthBar;
+  sf::CircleShape* m_pActiveUnitCircle;
+
+  bool selectionRectEnabled = false;
+  sf::RectangleShape* m_pSelectionRect;
 
   sf::RenderTarget* m_pTarget;
 };

@@ -22,8 +22,9 @@ RTSHealthBar::RTSHealthBar(sf::RenderTarget& renderTarget)
 RTSHealthBar::~RTSHealthBar() {}
 
 void
-RTSHealthBar::Draw(Vector2 position, uint32 currentHealth, uint32 maxHealth) {
+RTSHealthBar::Draw(Vector2I position, uint32 currentHealth, uint32 maxHealth) {
   m_CurrentHealth.setSize(sf::Vector2f(40.f * float(currentHealth) / maxHealth, 3));
+  position += Vector2I(0, -55);
 
   m_HealthBackground.setPosition(position.x, position.y);
   m_CurrentHealth.setPosition(position.x, position.y);
