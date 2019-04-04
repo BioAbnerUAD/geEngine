@@ -115,17 +115,23 @@ RTSTiledMap::setCameraStartPosition(const int32 x, const int32 y) {
 bool
 RTSTiledMap::isScreenCoordInMap(const int32 scrX,
                                 const int32 scrY) const {
-
-  int32 mapX = scrX - m_PreCalc_ScreenDeface.x;
-  int32 mapY = scrY - m_PreCalc_ScreenDeface.y;
+  int32 mapX, mapY;
 
   #ifdef MAP_IS_ISOMETRIC
-  mapX = (mapX + mapY - HALFTILESIZE_Y);
-  mapY = (mapY - mapX - HALFTILESIZE_X);
-  #endif
+  int32 auxX = (scrX - HALFTILESIZE_X - m_PreCalc_ScreenDeface.x) / 2;
+  int32 auxY = scrY - HALFTILESIZE_Y - m_PreCalc_ScreenDeface.y;
 
-  return Math::isWithinInclusive(mapX, 0, TILESIZE_X * m_mapSize.x) &&
-         Math::isWithinInclusive(mapY, 0, TILESIZE_Y * m_mapSize.y);
+  mapX = (auxX + auxY) - HALFTILESIZE_X;
+  mapY = (auxY - auxX) - HALFTILESIZE_Y;
+  #else
+  mapX = scrX - TILESIZE_X - m_PreCalc_ScreenDeface.x;
+  mapY = scrY - TILESIZE_Y - m_PreCalc_ScreenDeface.y;
+  #endif
+                                       
+  return Math::isWithin(mapX, -HALFTILESIZE_X, 
+                        m_mapSize.x * TILESIZE_X - HALFTILESIZE_X) &&
+         Math::isWithin(mapY, -HALFTILESIZE_Y, 
+                        m_mapSize.y * TILESIZE_Y - HALFTILESIZE_Y);
 }
 
 void
@@ -190,8 +196,8 @@ RTSTiledMap::getRawMapToScreenCoords(const float mapX,
                                      int32 &scrX,
                                      int32 &scrY) const {
   #ifdef MAP_IS_ISOMETRIC
-  scrX = Math::round(mapX - mapY) * TILESIZE_X;
-  scrY = Math::round(mapX + mapY) * TILESIZE_Y;
+  scrX = Math::round((mapX - mapY) * HALFTILESIZE_X);
+  scrY = Math::round((mapX + mapY) * HALFTILESIZE_Y);
 
   scrX += HALFTILESIZE_X + m_PreCalc_ScreenDeface.x;
   scrY += HALFTILESIZE_Y + m_PreCalc_ScreenDeface.y;
