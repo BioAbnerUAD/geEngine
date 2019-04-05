@@ -62,10 +62,11 @@ class GameOptions : public Module<GameOptions>
 
   static int32 s_selectedTerrainIndex;
 
+  static uint8 s_currentPlayerID;
   static int32 s_unitTypeIndex;
 
   static int32 s_brushSize;
-  static int32 activeTool;
+  static int32 s_activeTool;
   static bool s_drawGridWalkerGizmos;
 };
 

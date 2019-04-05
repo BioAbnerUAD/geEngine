@@ -83,7 +83,7 @@ public:
   moveUnit();
 
   RTSTiledMap* m_pTiledMap;
-  Vector<RTSGame::RTSUnitType*> m_lstUnitTypes;
+  Vector<RTSGame::RTSUnitType*> m_lstUnitTypes[2];
 
   List<RTSUnit*> m_lstUnits;
   List<RTSUnit*> m_lsActiveUnits;

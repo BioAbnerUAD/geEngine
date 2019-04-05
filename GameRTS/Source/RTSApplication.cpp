@@ -318,15 +318,31 @@ mainMenu(RTSApplication* pApp) {
 
   ImGui::Begin("Tool");
   {
-    ImGui::RadioButton("Edit Terrain", &GameOptions::activeTool, RTSTools::kTerrain);
+    ImGui::RadioButton("Edit Terrain", &GameOptions::s_activeTool, RTSTools::kTerrain);
     ImGui::SameLine();
-    ImGui::RadioButton("Place Unit", &GameOptions::activeTool, RTSTools::kPlaceUnit);
+    ImGui::RadioButton("Place Unit", &GameOptions::s_activeTool, RTSTools::kPlaceUnit);
     ImGui::SameLine();
-    ImGui::RadioButton("Move Unit", &GameOptions::activeTool, RTSTools::kMoveUnit);
+    ImGui::RadioButton("Move Unit", &GameOptions::s_activeTool, RTSTools::kMoveUnit);
+
+    String player = toString(GameOptions::s_currentPlayerID + 1);
+    if (ImGui::BeginCombo("Current Player", player.c_str())) {
+      for (int8 n = 0; n < 2; n++) {
+        String nString = toString(n + 1);
+        bool is_selected = (player == nString);
+        if (ImGui::Selectable(nString.c_str(), is_selected)) {
+          player = nString;
+          GameOptions::s_currentPlayerID = n;
+        }
+        if (is_selected) {
+          ImGui::SetItemDefaultFocus();
+        }
+      }
+      ImGui::EndCombo();
+    }
 
     ImGui::Spacing(); ImGui::Spacing();
 
-    if (GameOptions::activeTool == RTSTools::kTerrain) {
+    if (GameOptions::s_activeTool == RTSTools::kTerrain) {
       ImGui::Text("Terrain Type");
 
       for (int8 i = 0; i < TERRAIN_TYPE::kNumObjects; i++) {
@@ -337,14 +353,14 @@ mainMenu(RTSApplication* pApp) {
 
       ImGui::SliderInt("Brush Size", &GameOptions::s_brushSize, 1, 10);
     }
-    else if (GameOptions::activeTool == RTSTools::kPlaceUnit){
+    else if (GameOptions::s_activeTool == RTSTools::kPlaceUnit){
       ImGui::Text("Unit Type");
 
       ImGui::RadioButton("Archer", &GameOptions::s_unitTypeIndex, 0);
       ImGui::RadioButton("Knight", &GameOptions::s_unitTypeIndex, 1);
       ImGui::RadioButton("Pikeman", &GameOptions::s_unitTypeIndex, 2);
     }
-    else if (GameOptions::activeTool == RTSTools::kMoveUnit) {
+    else if (GameOptions::s_activeTool == RTSTools::kMoveUnit) {
 
       ImGui::Checkbox("Draw Gizmos", &GameOptions::s_drawGridWalkerGizmos);
       ImGui::SameLine();

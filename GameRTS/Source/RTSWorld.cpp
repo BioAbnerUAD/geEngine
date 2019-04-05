@@ -61,14 +61,16 @@ RTSWorld::init(sf::RenderTarget* pTarget) {
   //Set the first walker as the active walker
   setCurrentWalker(m_walkersList.size() > 0 ? 0 : -1);
 
-  m_lstUnitTypes.reserve(UNIT_TYPES::kNUM_UNIT_TYPES);
+  for (int32 i = 0; i < 2; ++i) {
+    m_lstUnitTypes[i].reserve(UNIT_TYPES::kNUM_UNIT_TYPES);
 
-  for (uint32 i = 0; i < UNIT_TYPES::kNUM_UNIT_TYPES; ++i) {
+    for (uint32 j = 0; j < UNIT_TYPES::kNUM_UNIT_TYPES; ++j) {
 
-    auto unitType = ge_new<RTSGame::RTSUnitType>();
-    unitType->loadAnimationData(m_pTarget, i + 1);
+      auto unitType = ge_new<RTSGame::RTSUnitType>();
+      unitType->loadAnimationData(m_pTarget, j + 1, i);
 
-    m_lstUnitTypes.emplace_back(unitType);
+      m_lstUnitTypes[i].emplace_back(unitType);
+    }
   }
 
   m_pHealthBar = ge_new<RTSHealthBar>(*m_pTarget);
@@ -100,9 +102,14 @@ RTSWorld::destroy() {
     m_walkersList.pop_back();
   }
 
-  while (m_lstUnitTypes.size() > 0) {
-    ge_delete(m_lstUnitTypes.back());
-    m_lstUnitTypes.pop_back();
+  while (m_lstUnitTypes[0].size() > 0) {
+    ge_delete(m_lstUnitTypes[0].back());
+    m_lstUnitTypes[0].pop_back();
+  }
+
+  while (m_lstUnitTypes[1].size() > 0) {
+    ge_delete(m_lstUnitTypes[1].back());
+    m_lstUnitTypes[1].pop_back();
   }
 
   while (m_lstUnits.size() > 0) {
@@ -183,19 +190,19 @@ RTSWorld::queryLeftClickEvent() {
   if (sf::Mouse::isButtonPressed(sf::Mouse::Left)) {
     selectionRectEnabled = false;
 
-    if (GameOptions::activeTool == RTSTools::kTerrain) {
+    if (GameOptions::s_activeTool == RTSTools::kTerrain) {
       paintTiles();
     }
     else if (!leftClickWasPressed) {
-      if (GameOptions::activeTool == RTSTools::kPlaceUnit) {
+      if (GameOptions::s_activeTool == RTSTools::kPlaceUnit) {
         putUnit();
       }
-      else if (GameOptions::activeTool == RTSTools::kMoveUnit) {
+      else if (GameOptions::s_activeTool == RTSTools::kMoveUnit) {
         auto sfPos = sf::Mouse::getPosition();
         clickStartPos = { sfPos.x, sfPos.y };
       }
     }
-    else if (GameOptions::activeTool == RTSTools::kMoveUnit)
+    else if (GameOptions::s_activeTool == RTSTools::kMoveUnit)
     {
       auto sfPos = sf::Mouse::getPosition();
       Vector2I currClickPos = { sfPos.x, sfPos.y };
@@ -215,7 +222,7 @@ RTSWorld::queryLeftClickEvent() {
     leftClickWasPressed = true;
   }
   else {
-    if (GameOptions::activeTool == RTSTools::kMoveUnit 
+    if (GameOptions::s_activeTool == RTSTools::kMoveUnit 
         && leftClickWasPressed) {
       if (selectionRectEnabled) {
         auto sfPos = sf::Mouse::getPosition();
@@ -237,7 +244,7 @@ RTSWorld::queryRightClickEvent() {
   static bool rightClickWasPressed = false;
 
   if (sf::Mouse::isButtonPressed(sf::Mouse::Right)) {
-    if (GameOptions::activeTool == RTSTools::kMoveUnit &&
+    if (GameOptions::s_activeTool == RTSTools::kMoveUnit &&
         !rightClickWasPressed) {
       moveUnit();
     }
@@ -313,10 +320,12 @@ RTSWorld::putUnit() {
     m_pTiledMap->getRawScreenToMapCoords(mousePos.x, mousePos.y,
                                          mapPos.x, mapPos.y);
 
-    m_lstUnits.push_back(new RTSUnit(0, 
-                                     m_lstUnitTypes[GameOptions::s_unitTypeIndex], 
-                                     mapPos, 
-                                     &m_activeWalker));
+    m_lstUnits.push_back(
+      new RTSUnit(GameOptions::s_currentPlayerID, 
+                  m_lstUnitTypes[GameOptions::s_currentPlayerID]
+                                [GameOptions::s_unitTypeIndex],
+                  mapPos, 
+                  &m_activeWalker));
   }
 }
 
@@ -340,6 +349,7 @@ RTSWorld::selectUnit() {
 
   for (auto it = m_lstUnits.begin(); it != m_lstUnits.end(); ++it) {
     if (nullptr != (*it) && 
+        (*it)->GetPlayerID() == GameOptions::s_currentPlayerID &&
         (*it)->GetCurrentHP() > 0 &&
         Vector2::distSquared((*it)->GetRawPosition(), mapPos) <=  0.4f) {
       auto search = std::find(prevActiveUnits.begin(), prevActiveUnits.end(), (*it));
@@ -406,6 +416,7 @@ RTSWorld::moveUnit() {
     for (auto it = m_lstUnits.begin(); it != m_lstUnits.end(); ++it) {
       auto search = std::find(m_lsActiveUnits.begin(), m_lsActiveUnits.end(), (*it));
       if (search == m_lsActiveUnits.end() && (*it)->GetCurrentHP() > 0  &&
+          (*it)->GetPlayerID() != GameOptions::s_currentPlayerID &&
           Vector2::distSquared((*it)->GetRawPosition(), mapPosRaw) <= 0.4f) {
 
         attackedUnit = (*it);
@@ -442,10 +453,12 @@ RTSWorld::selectAllUnitsIn(Vector2I clickStartPos, Vector2I currClickPos) {
 
       m_pTiledMap->getRawMapToScreenCoords(unitPos.x, unitPos.y, screenPos.x, screenPos.y);
 
-      if (screenPos.x <= Math::max(clickStartPos.x, currClickPos.x) &&
+      if (unit->GetPlayerID() == GameOptions::s_currentPlayerID &&
+          screenPos.x <= Math::max(clickStartPos.x, currClickPos.x) &&
           screenPos.x >= Math::min(clickStartPos.x, currClickPos.x) &&
           screenPos.y <= Math::max(clickStartPos.y, currClickPos.y) &&
           screenPos.y >= Math::min(clickStartPos.y, currClickPos.y)) {
+
         m_lsActiveUnits.push_back(unit);
       }
     }

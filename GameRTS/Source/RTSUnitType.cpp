@@ -16,7 +16,9 @@ namespace RTSGame {
   RTSUnitType::~RTSUnitType() {}
 
   void
-  RTSUnitType::loadAnimationData(sf::RenderTarget* pTarget, uint32 idUnitType) {
+  RTSUnitType::loadAnimationData(sf::RenderTarget* pTarget, 
+                                 uint32 idUnitType, 
+                                 uint8 playerID) {
     struct tmpStruct
     {
       uint32 id;
@@ -102,7 +104,9 @@ namespace RTSGame {
 
     //Load the texture for this unit type
     m_pTarget = pTarget;
-    m_texture.loadFromFile(pTarget, filePath.toString() + "units.png");
+    m_playerID = playerID;
+    m_texture.loadFromFile(pTarget, filePath.toString() + "units-" +
+                                    toString(playerID + 1) + ".png");
   }
 
   int32

@@ -48,6 +48,9 @@ public:
   const RTSGame::RTSUnitType* 
   GetUnitType() const { return m_pUnitType; }
 
+  uint8
+  GetPlayerID() const { return m_pUnitType->GetPlayerID(); }
+
   uint32 
   GetMaxHP() const { return m_maxHP; }
 

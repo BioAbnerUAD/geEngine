@@ -37,7 +37,9 @@ int32 GameOptions::s_unitTypeIndex = 0;
 
 int32 GameOptions::s_brushSize = 1;
 
-int32 GameOptions::activeTool = 0;
+int32 GameOptions::s_activeTool = 0;
+
+uint8 GameOptions::s_currentPlayerID = 0;
 
 bool GameOptions::s_drawGridWalkerGizmos = false;
 

@@ -109,7 +109,9 @@ namespace RTSGame {
      loadFromFile(uint32 idUnitType);*/
 
      void
-     loadAnimationData(sf::RenderTarget* pTarget, uint32 idUnitType);
+     loadAnimationData(sf::RenderTarget* pTarget, 
+                       uint32 idUnitType, 
+                       uint8 playerID);
 
      int32 
      GetAnimIndex(ANIMATIONS::E activeAnim) const;
@@ -128,6 +130,11 @@ namespace RTSGame {
        return m_id;
      }
 
+     uint8
+     GetPlayerID() const {
+       return m_playerID;
+     }
+
      String
      GetName() const {
        return m_name;
@@ -140,5 +147,6 @@ namespace RTSGame {
      Vector<Animation> m_animationFrames;
      RTSTexture m_texture;
      sf::RenderTarget* m_pTarget;
+     uint8 m_playerID;
   };
 }

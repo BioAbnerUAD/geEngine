@@ -129,6 +129,9 @@ RTSUnit::Render() {
       if (m_currentAnim == ANIMATIONS::kATTACK &&  m_target) {
         if (m_target->m_currentHP > 0) {
           m_target->m_currentHP -= m_damagePerSecond;
+          if (m_target->m_target == nullptr) {
+            m_target->m_target = this;
+          }
         }
       }
       m_animTime -= duration;
